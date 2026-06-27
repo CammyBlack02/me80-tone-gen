@@ -212,10 +212,15 @@ def _qual(value: float, high: str, mid: str, low: str) -> str:
 
 def format_features_one_line(features: AudioFeatures) -> str:
     """One-line summary suitable for CLI stderr output."""
+    energy_chip = _qual(features.energy, "high", "mid", "low")
+    acoustic_chip = _qual(features.acousticness, "acoustic", "mixed", "electric")
+    instr_chip = _qual(features.instrumentalness, "instrumental", "mixed", "vocal-led")
+    valence_chip = _qual(features.valence, "bright", "neutral", "dark")
     return (
-        f"tempo={features.tempo:.0f} bpm  energy={features.energy:.2f}  "
+        f"tempo={features.tempo:.0f} bpm  "
+        f"energy={features.energy:.2f} ({energy_chip})  "
         f"loudness={features.loudness:.1f} dB  "
-        f"acousticness={features.acousticness:.2f}  "
-        f"instrumentalness={features.instrumentalness:.2f}  "
-        f"valence={features.valence:.2f}"
+        f"acousticness={features.acousticness:.2f} ({acoustic_chip})  "
+        f"instrumentalness={features.instrumentalness:.2f} ({instr_chip})  "
+        f"valence={features.valence:.2f} ({valence_chip})"
     )

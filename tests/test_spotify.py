@@ -6,6 +6,7 @@ import dataclasses
 import io
 import json as _json
 import time
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -19,6 +20,8 @@ from me80_tone_gen.spotify import (
     TrackInfo,
     _parse_track_id,
 )
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 @pytest.mark.parametrize(
@@ -184,11 +187,6 @@ def test_get_translates_http_errors() -> None:
         assert not isinstance(exc_info.value, (SpotifyAuthError, SpotifyNotFoundError))
 
 
-from pathlib import Path
-
-FIXTURES = Path(__file__).parent / "fixtures"
-
-
 def _seeded_client() -> SpotifyClient:
     client = SpotifyClient(client_id="id", client_secret="secret")
     client._token = "abc"
@@ -282,13 +280,37 @@ def test_format_features_for_prompt_contains_all_fields() -> None:
     assert "neutral" in text               # valence=0.337 → mid bucket
 
 
-def test_format_features_qualitative_buckets() -> None:
-    """Sanity-check the thresholds: 0.7→high, 0.5→mid, 0.1→low."""
+def test_qual_threshold_boundaries() -> None:
+    from me80_tone_gen.spotify import _qual
+
+    # 0.66 is the high threshold (inclusive).
+    assert _qual(0.66, "high", "mid", "low") == "high"
+    assert _qual(0.65, "high", "mid", "low") == "mid"
+    # 0.33 is the mid threshold (inclusive).
+    assert _qual(0.33, "high", "mid", "low") == "mid"
+    assert _qual(0.32, "high", "mid", "low") == "low"
+    # Far-end sanity.
+    assert _qual(0.95, "high", "mid", "low") == "high"
+    assert _qual(0.0, "high", "mid", "low") == "low"
+
+
+def test_format_features_prompt_uses_qual_labels() -> None:
+    """The formatter must use _qual for each labeled feature."""
     from me80_tone_gen.spotify import format_features_for_prompt
 
-    high = AudioFeatures(120, 0.7, -8, 0, 1, 0.7, 0.7, 0.7)
-    mid = AudioFeatures(120, 0.5, -8, 0, 1, 0.5, 0.5, 0.5)
-    low = AudioFeatures(120, 0.1, -8, 0, 1, 0.1, 0.1, 0.1)
-    assert "high" in format_features_for_prompt(high)
-    assert "mixed" in format_features_for_prompt(mid)
-    assert "very low — electric" in format_features_for_prompt(low)
+    # energy=0.7 should bucket high; energy=0.1 should bucket low.
+    high = AudioFeatures(120, 0.7, -8, 0, 1, 0.05, 0.05, 0.05)
+    low = AudioFeatures(120, 0.1, -8, 0, 1, 0.95, 0.95, 0.95)
+    assert "energy: 0.70 (high)" in format_features_for_prompt(high)
+    assert "energy: 0.10 (low)" in format_features_for_prompt(low)
+
+
+def test_format_features_one_line_includes_chips() -> None:
+    from me80_tone_gen.spotify import format_features_one_line
+    features = AudioFeatures(120.0, 0.92, -4.0, 9, 0, 0.04, 0.15, 0.41)
+    text = format_features_one_line(features)
+    assert "energy=0.92 (high)" in text
+    assert "acousticness=0.04 (electric)" in text
+    assert "instrumentalness=0.15 (vocal-led)" in text
+    assert "valence=0.41 (neutral)" in text
+    assert "tempo=120 bpm" in text
