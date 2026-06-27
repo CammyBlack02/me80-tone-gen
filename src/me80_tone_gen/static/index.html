@@ -31,6 +31,11 @@
   .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     padding: 20px; margin-bottom: 16px; }
 
+  #spotify-badge { font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; margin-bottom: 10px; }
+  #spotify-badge .title { color: var(--accent); margin-right: 6px; }
+
   label.field { display: block; margin-bottom: 14px; }
   label.field > .label { display: block; font-size: 13px; color: var(--text-dim);
     margin-bottom: 6px; }
@@ -108,6 +113,12 @@
                 autofocus required></textarea>
     </label>
 
+    <label class="field">
+      <span class="label">Spotify track (URL or song name) — optional</span>
+      <input type="text" id="spotify-track"
+             placeholder="e.g. https://open.spotify.com/track/... or 'Texas Flood by SRV'" />
+    </label>
+
     <div class="row">
       <label class="field">
         <span class="label">Model</span>
@@ -139,6 +150,7 @@
   <section id="results" class="results">
     <div class="card">
       <div id="recipe-badge"></div>
+      <div id="spotify-badge" style="display:none;"></div>
       <p class="patch-name" id="patch-name"></p>
       <p class="rationale" id="rationale"></p>
       <pre class="knob-list" id="knob-list"></pre>
@@ -224,6 +236,27 @@ function renderResult(data) {
   } else {
     badge.innerHTML = "";
   }
+  const sbadge = $("spotify-badge");
+  if (data.spotify_track_label) {
+    const f = data.spotify_features;
+    sbadge.textContent = "";
+    const title = document.createElement("span");
+    title.className = "title";
+    title.textContent = "Spotify:";
+    sbadge.appendChild(title);
+    sbadge.appendChild(document.createTextNode(" " + data.spotify_track_label));
+    sbadge.appendChild(document.createElement("br"));
+    sbadge.appendChild(document.createTextNode(
+      `tempo=${Math.round(f.tempo)} bpm  ` +
+      `energy=${f.energy.toFixed(2)}  ` +
+      `loudness=${f.loudness.toFixed(1)} dB  ` +
+      `acousticness=${f.acousticness.toFixed(2)}  ` +
+      `valence=${f.valence.toFixed(2)}`
+    ));
+    sbadge.style.display = "";
+  } else {
+    sbadge.style.display = "none";
+  }
   $("results").classList.add("visible");
   $("error").style.display = "none";
 }
@@ -251,6 +284,7 @@ $("gen-form").addEventListener("submit", async (e) => {
         retries: parseInt($("retries").value, 10),
         use_recipes: $("use-recipes").checked,
         liveset_name: $("liveset-name").value.trim() || "Generated",
+        spotify_track: $("spotify-track").value.trim() || null,
       }),
     });
     if (!r.ok) {
