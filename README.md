@@ -104,6 +104,41 @@ tone-gen-serve
 
 Single-page UI: text input, options, results panel with recipe match indicator, download `.tsl` button. The browser builds the download from the same JSON the API returns — no second round-trip.
 
+### Spotify integration (optional)
+
+You can attach a Spotify track to give the model real audio context (tempo, energy, loudness, key, acousticness, instrumentalness, valence). It nudges the model — it doesn't override your description or a matched recipe.
+
+**Setup (one-time):**
+
+1. Create a free Spotify developer app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
+2. Copy the Client ID and Client Secret.
+3. Export them in your shell:
+
+   ```bash
+   export SPOTIFY_CLIENT_ID="..."
+   export SPOTIFY_CLIENT_SECRET="..."
+   ```
+
+   (Add to your `~/.zshrc` / `~/.bashrc` to persist, or source a `.env` file before running.)
+
+**CLI:**
+
+```bash
+# By URL
+tone-gen "warm bluesy lead" --spotify-track "https://open.spotify.com/track/<id>"
+
+# By song name (top search result is used)
+tone-gen "warm bluesy lead" --spotify-song "Texas Flood by SRV"
+```
+
+The track name and a one-line features summary are printed to stderr; the patch goes to stdout. The two flags are mutually exclusive and cannot be combined with `--batch`.
+
+**Web UI:**
+
+A "Spotify track (URL or song name)" input sits below the description box. Leave it empty for the base flow; when filled, the resolved features appear in the results panel.
+
+**Without credentials configured:** the base flow is unaffected. Spotify code paths only run when you opt in, and you get a clear error if credentials are missing.
+
 ### Importing onto the pedal
 
 1. Connect ME-80 via USB and power on
