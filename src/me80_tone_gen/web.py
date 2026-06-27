@@ -23,6 +23,12 @@ from .generator import DEFAULT_MODEL, DEFAULT_TEMPERATURE, GenerationError
 from .recipes import Recipe, load_recipes, match_recipe
 from .renderer import render_knob_list
 from .schema import SemanticPatch
+from .spotify import (
+    SpotifyAuthError,
+    SpotifyClient,
+    SpotifyError,
+    SpotifyNotFoundError,
+)
 from .writer import build_liveset
 
 app = FastAPI(title="ME-80 AI Tone Generator", version=__version__)
@@ -40,6 +46,7 @@ class GenerateRequest(BaseModel):
     retries: int = Field(default=2, ge=0, le=5)
     use_recipes: bool = True
     liveset_name: str = "Generated"
+    spotify_track: str | None = Field(default=None, max_length=500)
 
 
 class GenerateResponse(BaseModel):
@@ -48,6 +55,8 @@ class GenerateResponse(BaseModel):
     recipe_matched_id: str | None
     recipe_matched_description: str | None
     liveset: dict[str, Any]
+    spotify_features: dict | None = None
+    spotify_track_label: str | None = None
 
 
 @app.get("/api/health")
@@ -71,6 +80,35 @@ def generate(req: GenerateRequest) -> GenerateResponse:
     recipe = match_recipe(req.description, _RECIPES) if req.use_recipes else None
     seed = recipe.model_dump(exclude={"aliases"}) if recipe else None
 
+    audio_features = None
+    spotify_features_dict = None
+    spotify_track_label = None
+    if req.spotify_track:
+        try:
+            client = SpotifyClient()
+            value = req.spotify_track.strip()
+            if value.startswith(("http://", "https://", "spotify:")):
+                audio_features, info = client.features_from_url(value)
+            else:
+                audio_features, info = client.features_from_query(value)
+        except SpotifyAuthError as exc:
+            raise HTTPException(status_code=400, detail={"message": str(exc)}) from exc
+        except SpotifyNotFoundError as exc:
+            raise HTTPException(status_code=404, detail={"message": str(exc)}) from exc
+        except SpotifyError as exc:
+            raise HTTPException(status_code=502, detail={"message": str(exc)}) from exc
+        spotify_track_label = f"{info.name} — {info.artist}"
+        spotify_features_dict = {
+            "tempo": audio_features.tempo,
+            "energy": audio_features.energy,
+            "loudness": audio_features.loudness,
+            "key": audio_features.key,
+            "mode": audio_features.mode,
+            "acousticness": audio_features.acousticness,
+            "instrumentalness": audio_features.instrumentalness,
+            "valence": audio_features.valence,
+        }
+
     try:
         patch = generator.generate_patch(
             req.description,
@@ -78,6 +116,7 @@ def generate(req: GenerateRequest) -> GenerateResponse:
             temperature=req.temperature,
             retries=req.retries,
             recipe_seed=seed,
+            audio_features=audio_features,
         )
     except GenerationError as exc:
         raise HTTPException(
@@ -92,6 +131,8 @@ def generate(req: GenerateRequest) -> GenerateResponse:
         recipe_matched_id=recipe.id if recipe else None,
         recipe_matched_description=recipe.description if recipe else None,
         liveset=liveset,
+        spotify_features=spotify_features_dict,
+        spotify_track_label=spotify_track_label,
     )
 
 
