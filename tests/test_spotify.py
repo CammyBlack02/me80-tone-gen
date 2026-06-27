@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 
 from me80_tone_gen.spotify import (
     AudioFeatures,
     SpotifyAuthError,
+    SpotifyError,
     SpotifyNotFoundError,
     TrackInfo,
     _parse_track_id,
@@ -21,6 +24,9 @@ from me80_tone_gen.spotify import (
         ("http://open.spotify.com/track/3n3Ppam7vgaVa1iaRUc9Lp", "3n3Ppam7vgaVa1iaRUc9Lp"),
         ("spotify:track:3n3Ppam7vgaVa1iaRUc9Lp", "3n3Ppam7vgaVa1iaRUc9Lp"),
         ("  spotify:track:3n3Ppam7vgaVa1iaRUc9Lp  ", "3n3Ppam7vgaVa1iaRUc9Lp"),
+        ("https://open.spotify.com/intl-ja/track/3n3Ppam7vgaVa1iaRUc9Lp", "3n3Ppam7vgaVa1iaRUc9Lp"),
+        ("https://open.spotify.com/intl-fr/track/3n3Ppam7vgaVa1iaRUc9Lp?si=abc", "3n3Ppam7vgaVa1iaRUc9Lp"),
+        ("https://open.spotify.com/track/3n3Ppam7vgaVa1iaRUc9Lp#fragment", "3n3Ppam7vgaVa1iaRUc9Lp"),
     ],
 )
 def test_parse_track_id_accepts_canonical_forms(value: str, expected: str) -> None:
@@ -49,17 +55,15 @@ def test_dataclasses_are_frozen() -> None:
         tempo=120.0, energy=0.5, loudness=-8.0, key=0, mode=1,
         acousticness=0.1, instrumentalness=0.0, valence=0.5,
     )
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         af.tempo = 130.0  # type: ignore[misc]
 
     info = TrackInfo(id="abc", name="Track", artist="Artist")
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         info.name = "Other"  # type: ignore[misc]
 
 
 def test_error_hierarchy() -> None:
     """Both subclasses are catchable as SpotifyError."""
-    from me80_tone_gen.spotify import SpotifyError
-
     assert issubclass(SpotifyAuthError, SpotifyError)
     assert issubclass(SpotifyNotFoundError, SpotifyError)

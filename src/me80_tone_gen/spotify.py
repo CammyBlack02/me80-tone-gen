@@ -26,7 +26,9 @@ _API_BASE = "https://api.spotify.com/v1"
 _TOKEN_EXPIRY_BUFFER_SECONDS = 60
 
 _TRACK_URL_PATTERNS = (
-    re.compile(r"^https?://open\.spotify\.com/track/(?P<id>[A-Za-z0-9]+)(?:\?.*)?$"),
+    re.compile(
+        r"^https?://open\.spotify\.com/(?:intl-[a-z]{2,3}/)?track/(?P<id>[A-Za-z0-9]+)(?:[/?#].*)?$"
+    ),
     re.compile(r"^spotify:track:(?P<id>[A-Za-z0-9]+)$"),
 )
 
@@ -66,7 +68,7 @@ class SpotifyNotFoundError(SpotifyError):
 
 def _parse_track_id(value: str) -> str:
     for pattern in _TRACK_URL_PATTERNS:
-        m = pattern.match(value.strip())
-        if m:
-            return m.group("id")
+        match = pattern.match(value.strip())
+        if match:
+            return match.group("id")
     raise SpotifyNotFoundError(f"not a Spotify track URL or URI: {value!r}")
