@@ -34,6 +34,10 @@ cd ~/Development/me80-tone-gen
 git worktree add ../me80-tone-gen-worktrees/feat-NN-short-name -b feat/NN-short-name
 cd ../me80-tone-gen-worktrees/feat-NN-short-name
 python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
+
+# The security-review skill resolves `origin/HEAD` for its diff; new worktrees
+# don't always have it set, and the skill errors if it's missing.
+git remote set-head origin main
 ```
 
 Branch naming: `feat/NN-short-name`, `fix/NN-short-name`, `chore/NN-short-name`, `docs/NN-short-name`. `NN` is the issue number.
