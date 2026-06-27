@@ -15,6 +15,7 @@ dev = ["pytest>=8"]
 
 [project.scripts]
 tone-gen = "me80_tone_gen.cli:main"
+tone-gen-serve = "me80_tone_gen.web:serve"
 
 [build-system]
 requires = ["hatchling"]
