@@ -40,18 +40,79 @@ How to use each block:
 - If the description names a specific effect (e.g. "spring reverb", "tape echo",
   "chorus"), the matching block MUST be enabled with the matching type.
 
-Taste guidelines:
-- High-gain metal: METAL preamp, often T-SCREAM in front to tighten lows,
-  scooped mids (middle ~30-40), bass and treble pushed.
-- Bluesy lead: CRUNCH or LEAD preamp, gentle OVERDRIVE or no OD, midrange
-  forward (middle ~60), ROOM or SPRING reverb at moderate level.
-- Clean sparkle: CLEAN or COMBO preamp, treble pushed, optional CHORUS mod,
-  HALL or ROOM reverb.
-- Edge-of-breakup: TWEED or CRUNCH preamp at gain ~40-55, no OD, light reverb.
-- Surf / spaghetti western: CLEAN preamp, SPRING reverb (level ~50), TREMOLO
-  via MOD or EQ/FX2.
-- Ambient / shoegaze: CLEAN or LEAD preamp, DELAY (often 100-600 ms or longer)
-  with moderate feedback, lush HALL reverb.
+Reference examples — learn the PATTERN of which blocks belong on/off per genre,
+not just the values. Notice that each genre has a distinctive *combination* of
+enabled blocks; the supporting effects are as important as the preamp choice.
+
+Example 1 — "djent rhythm tone":
+  PREAMP   : METAL (gain=85, bass=60, middle=25, treble=80, level=75)
+  OD/DS    : T-SCREAM ON (drive=25, tone=75, level=60)   ← TS in front tightens lows
+  COMP/FX1 : off
+  MOD      : off
+  EQ/FX2   : off
+  DELAY    : off                                          ← djent is DRY
+  REVERB   : ROOM (level=15)                              ← minimal, body only
+  PEDAL FX : off
+  Pattern: high-gain metal needs T-SCREAM tightening; modulation/delay kill djent.
+
+Example 2 — "country twang lead":
+  PREAMP   : CLEAN (gain=30, bass=45, middle=65, treble=75, level=80)
+  OD/DS    : off
+  COMP/FX1 : COMP ON (knob1=70, knob2=60, knob3=70)       ← compression IS country
+  MOD      : off
+  EQ/FX2   : off
+  DELAY    : 100-600 ms ON (time=25, feedback=15, e_level=30)  ← short slap-back
+  REVERB   : ROOM (level=30)
+  PEDAL FX : off
+  Pattern: clean-but-not-flat; compressor on hard; slap-back delay is signature.
+
+Example 3 — "shoegaze wall of sound":
+  PREAMP   : LEAD (gain=55, bass=50, middle=50, treble=65, level=80)
+  OD/DS    : off
+  COMP/FX1 : off
+  MOD      : CHORUS ON (knob1=50, knob2=60, knob3=60)     ← lush movement
+  EQ/FX2   : off
+  DELAY    : 500-6000 ms ON (time=70, feedback=55, e_level=60)  ← long, washy
+  REVERB   : HALL (level=85)                              ← drenched
+  PEDAL FX : off
+  Pattern: stack EVERY ambient effect; drive comes from amp, not OD.
+
+Example 4 — "post-rock build swell":
+  PREAMP   : CLEAN (gain=35, bass=50, middle=55, treble=65, level=80)
+  OD/DS    : off
+  COMP/FX1 : COMP ON (knob1=55, knob2=50, knob3=60)       ← even sustain for swells
+  MOD      : off
+  EQ/FX2   : off
+  DELAY    : 500-6000 ms ON (time=80, feedback=65, e_level=60)  ← long building tails
+  REVERB   : HALL (level=80)                              ← vast space
+  PEDAL FX : off
+  Pattern: clean preamp + long delay + huge reverb; comp for the volume swells.
+
+Example 5 — "funk clean rhythm":
+  PREAMP   : CLEAN (gain=25, bass=45, middle=60, treble=70, level=75)
+  OD/DS    : off
+  COMP/FX1 : COMP ON (knob1=75, knob2=70, knob3=65)       ← squashed for the chuck
+  MOD      : off
+  EQ/FX2   : off
+  DELAY    : off
+  REVERB   : ROOM (level=20)                              ← just a touch
+  PEDAL FX : off
+  Pattern: heavy compression is the only signature effect; everything else off.
+
+Example 6 — "stoner doom riff":
+  PREAMP   : STACK (gain=70, bass=80, middle=55, treble=45, level=75)  ← bass-forward
+  OD/DS    : FUZZ ON (drive=70, tone=45, level=70)        ← fuzz IS the tone
+  COMP/FX1 : off
+  MOD      : off
+  EQ/FX2   : off
+  DELAY    : off
+  REVERB   : ROOM (level=40)                              ← natural amp room, not cathedral
+  PEDAL FX : off
+  Pattern: stack + fuzz, dark and fat; no delay/mod, modest room reverb.
+
+When you generate, ask yourself per block: would this style HAVE this effect on?
+Many genres are defined by what's OFF as much as what's on. Don't enable blocks
+"just to fill space" — and don't leave a defining effect off because you forgot.
 
 Output a single JSON object matching the schema. Every block MUST appear in the
 output. No prose outside the `rationale` field.
