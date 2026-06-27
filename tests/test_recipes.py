@@ -97,6 +97,84 @@ def test_recipe_patches_use_valid_knob_range(recipes: list[Recipe]) -> None:
                 assert 0 <= v <= 99, f"{r.id}.{block_name}.{k}={v} out of 0-99"
 
 
+# ---------- confidence + tags schema fields ----------
+
+
+def test_confidence_defaults_to_untested() -> None:
+    r = Recipe.model_validate({
+        "id": "x",
+        "aliases": ["x"],
+        "description": "x",
+        "patch": _minimal_patch(),
+    })
+    assert r.confidence == "untested"
+
+
+def test_confidence_accepts_tested() -> None:
+    r = Recipe.model_validate({
+        "id": "x",
+        "aliases": ["x"],
+        "description": "x",
+        "patch": _minimal_patch(),
+        "confidence": "tested",
+    })
+    assert r.confidence == "tested"
+
+
+def test_confidence_rejects_other_values() -> None:
+    """Only 'tested' / 'untested' allowed — protects against typos like 'verified'."""
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Recipe.model_validate({
+            "id": "x",
+            "aliases": ["x"],
+            "description": "x",
+            "patch": _minimal_patch(),
+            "confidence": "verified",
+        })
+
+
+def test_tags_default_to_empty_list() -> None:
+    r = Recipe.model_validate({
+        "id": "x",
+        "aliases": ["x"],
+        "description": "x",
+        "patch": _minimal_patch(),
+    })
+    assert r.tags == []
+
+
+def test_tags_accept_list_of_strings() -> None:
+    r = Recipe.model_validate({
+        "id": "x",
+        "aliases": ["x"],
+        "description": "x",
+        "patch": _minimal_patch(),
+        "tags": ["metal", "1980s", "lead"],
+    })
+    assert r.tags == ["metal", "1980s", "lead"]
+
+
+def test_packaged_recipes_are_honestly_marked_untested(recipes: list[Recipe]) -> None:
+    """Honest signal: every shipped recipe is Claude-seeded, not ear-validated.
+
+    Flip individual recipes to `confidence: "tested"` in recipes.json only after
+    the author has actually played them through the pedal. If this test starts
+    failing because a recipe is tested=true, that's expected — update the count.
+    """
+    tested = [r for r in recipes if r.confidence == "tested"]
+    untested = [r for r in recipes if r.confidence == "untested"]
+    assert len(tested) + len(untested) == len(recipes), "unexpected confidence value"
+    # As of #7 landing, the entire starter set ships untested. The author can
+    # flip individual recipes to "tested" via direct-to-main commits (per
+    # WORKFLOW.md trivial-issue path) as they ear-test them.
+    assert len(tested) == 0, (
+        f"{len(tested)} recipes marked tested — has anyone actually ear-tested them? "
+        f"If yes, update this assertion to the new count and document which were tested."
+    )
+
+
 # --- helper ---
 
 def _minimal_patch() -> dict:
