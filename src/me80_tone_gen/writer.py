@@ -43,8 +43,8 @@ def _clamp_knob(v: int) -> str:
     """Clamp a knob value to 0..99 and stringify (the .tsl storage form).
 
     The ME-80 hardware writes 99 when a knob is at physical maximum (verified
-    against a deliberate max-knob export from Cameron's pedal). BTS will accept
-    100 on import, but we match hardware behaviour to keep round-trips clean.
+    by a deliberate max-knob export from the pedal). BTS will accept 100 on
+    import, but we match hardware behaviour to keep round-trips clean.
     """
     return str(max(0, min(99, int(v))))
 

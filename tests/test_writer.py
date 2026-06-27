@@ -45,7 +45,17 @@ REFERENCE_TSL = Path(__file__).resolve().parents[1] / "data" / "Contra_1.tsl"
 
 @pytest.fixture(scope="module")
 def reference() -> dict:
-    """The real Contra_1.tsl liveset, parsed once per test module."""
+    """The real Contra_1.tsl liveset, parsed once per test module.
+
+    The file isn't bundled in the public repo (upstream johnsrude/BossToneStudio
+    has no LICENSE, so we can't redistribute). Tests depending on it skip
+    cleanly when it's absent — run scripts/fetch_reference.sh to enable them.
+    """
+    if not REFERENCE_TSL.exists():
+        pytest.skip(
+            f"Reference {REFERENCE_TSL.name} not present; "
+            f"run scripts/fetch_reference.sh to enable conformance tests."
+        )
     return json.loads(REFERENCE_TSL.read_text(encoding="utf-8"))
 
 

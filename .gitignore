@@ -22,6 +22,10 @@ build/
 dist/
 *.egg
 
-# Generated .tsl files (keep reference samples in data/)
+# Generated .tsl files
 /*.tsl
 /scripts/*.tsl
+
+# Reference .tsl exports — not tracked in the public repo (third-party copyright
+# unclear). Fetch via scripts/fetch_reference.sh for local development.
+/data/*.tsl

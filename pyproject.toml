@@ -4,10 +4,32 @@ version = "0.1.0"
 description = "Natural-language → Boss ME-80 patch (.tsl) generator, local-only via Ollama."
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "PolyForm-Noncommercial-1.0.0" }
+authors = [{ name = "CammyBlack02" }]
+keywords = ["boss", "me-80", "guitar", "tone", "patch", "tsl", "ollama", "llm"]
+classifiers = [
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Artistic Software",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: End Users/Desktop",
+]
 dependencies = [
     "pydantic>=2.6",
     "ollama>=0.4",
 ]
+
+[project.urls]
+Homepage = "https://github.com/CammyBlack02/me80-tone-gen"
+Repository = "https://github.com/CammyBlack02/me80-tone-gen"
+Issues = "https://github.com/CammyBlack02/me80-tone-gen/issues"
 
 [project.optional-dependencies]
 web = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]

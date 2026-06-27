@@ -2,7 +2,7 @@
 
 When the ME-80 loads a patch the physical knobs **don't move** to match the new
 values until you touch them. So the knob list is the printable "settings card"
-that lets Cameron dial the patch in by hand if needed.
+that lets you dial the patch in by hand if needed.
 
 Source labels: spec §3.3 (effect-block table) + §4 (enum names).
 """
