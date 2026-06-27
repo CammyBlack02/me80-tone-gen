@@ -45,6 +45,24 @@ Promote an entry to a GitHub issue once it's concrete enough that the issue body
 
 ---
 
+## Custom tone-knowledge fine-tuned model (for tone accuracy, see `#6`)
+
+**Status:** research-grade, deferred indefinitely
+**Why here:** Mentioned during the tone-accuracy brainstorm as the "ultimate" knowledge lever. Would mean building a dataset of (song, artist, year, gear, ME-80 settings) tuples and fine-tuning a smaller model to specialise on guitar tone — would likely outperform a generic 14B model at this specific task.
+
+**Why deferred:**
+- Dataset construction is the real work, and it's substantial (probably 500-1000+ high-quality examples)
+- A fine-tune of a 7B model on a Mac is ~half a day of compute
+- The marginal accuracy gain vs. `#7` (curated recipes) + `#10` (gear lookup) + `#11` (refinement) is unclear and probably small
+- Maintenance burden: every time the underlying model improves, the fine-tune has to be redone
+
+**Promote to an issue when:**
+- All of `#7`, `#10`, and `#11` are landed and demonstrably not enough, OR
+- Author finds the dataset construction genuinely fun (it sort of is — it's curating opinionated tone knowledge), OR
+- Someone with ML pipeline experience wants to drive it.
+
+---
+
 ## Adding entries
 
 Format per entry:
