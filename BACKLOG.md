@@ -78,7 +78,7 @@ Door stays open either way; this investigation makes the issue ready to write th
 
 ## Direct USB MIDI to the ME-80 (eliminate the BTS-Import step)
 
-**Status:** investigation in progress
+**Status:** investigation done 2026-06-27 — verdict: **skip indefinitely**
 **Why here, not as an issue:** the ME-80 has no documented SysEx parameter-write path (spec §1). Reverse-engineering may or may not be tractable; we won't know until we look.
 
 **Why it's interesting:**
@@ -103,13 +103,42 @@ Phase 1 — research-only (no hardware): scan public reverse-engineering work, G
 
 Phase 2 — live USB capture (needs hardware connected): if phase 1 is inconclusive, capture USB traffic while BTS imports a liveset using `PacketLogger` (macOS) or `usbmon` + Wireshark (Linux). Decode the bytes against the MIDI / Roland DT1 standards. ~1-2 hours of interactive work with the author.
 
-**Promote to an issue when:**
-- Phase 1 or 2 confirms the protocol is reverse-engineerable AND tractable, AND
-- Author is willing to commit 2-3 sessions to the implementation.
+### Phase 1 findings (2026-06-27)
 
-**Skip if:**
-- Protocol turns out to be opaque/obfuscated
-- BTS Import is "good enough" once setlist generation lands (#5) — the friction may matter less when you import a single bank rather than tweaking iteratively
+**The protocol path is closed enough not to pursue.**
+
+Evidence:
+
+1. **BOSS ME-80 Training Guide** (cdn.roland.com/assets/media/pdf/ME-80_Training_Guide.pdf), page on USB usage: *"It can even respond to MIDI program and control changes via USB."* No mention of SysEx, parameter writes, or bulk dumps. The documented MIDI surface is PC + CC only.
+2. **Zero open-source reverse-engineering** of the ME-80 USB protocol on GitHub. Searched "boss me-80 midi", "boss me-80", and code search for "me-80" + "sysex" — only false-positive hits and our own repo. In ~12 years since the pedal shipped, no one has built a public MIDI-direct tool for ME-80.
+3. **Roland published DT1 SysEx for Katana but NOT for ME-80.** This is why KatanaToneStream's approach works for Katana — the protocol is documented in the Katana MIDI implementation chart. The ME-80's MIDI implementation chart documents PC + CC only.
+4. **BTS clearly uses a proprietary USB Bulk-endpoint protocol** for patch upload, not standard MIDI. Reverse-engineerable in principle, but no one's published the work.
+
+### Three outcomes mapped to ME-80 reality
+
+- **Fine-grained protocol** (Katana-style): **very unlikely** — the pedal doesn't expose SysEx parameter messages at all
+- **Bulk-upload only**: possible, would require 1-3 hours USB sniffing + decoding + ~1 session implementation
+- **Opaque**: possible — the protocol may be sufficiently custom that decoding it isn't worth the effort
+
+### Honest cost/benefit if we pursued bucket #2 (bulk-upload)
+
+- Time saved per gig prep: ~20-30 seconds (skip the drag-to-slot)
+- BTS dependency removed: real win on Apple Silicon where BTS runs via Rosetta
+- **Iterative tweak loop: NOT unlocked** — still upload-whole-patch, no real-time parameter feedback. The thing that made direct USB attractive on Katana doesn't apply here.
+- Bricking risk: sending malformed bulk messages could corrupt a user memory slot
+- Total cost: 4-5 hours of work for a small, bounded UX gain
+
+### Verdict
+
+Skip indefinitely. The killer point is that **the real value of direct USB (live iterative tweak loop) requires the fine-grained protocol the ME-80 does not expose.** Bulk-upload-only direct USB is just "skip a drag-and-drop step" — small UX gain, non-trivial implementation, real bricking risk.
+
+Better uses of the time: #7 / #9 / #10 (tone accuracy work) and #5 (setlist generation). Once #5 lands, the BTS Import step happens once per gig prep — a 30-second cost, not iterative pain.
+
+### Revisit only if
+
+- A user (not us) publishes a reverse-engineered ME-80 USB protocol on GitHub, OR
+- BTS breaks on a future macOS update and we genuinely lose the import path, OR
+- Roland releases an updated MIDI implementation chart documenting SysEx for ME-80 (unlikely after 12+ years)
 
 ---
 
