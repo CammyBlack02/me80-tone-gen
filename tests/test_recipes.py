@@ -156,22 +156,32 @@ def test_tags_accept_list_of_strings() -> None:
     assert r.tags == ["metal", "1980s", "lead"]
 
 
-def test_packaged_recipes_are_honestly_marked_untested(recipes: list[Recipe]) -> None:
-    """Honest signal: every shipped recipe is Claude-seeded, not ear-validated.
+def test_packaged_recipes_have_legal_confidence_values(recipes: list[Recipe]) -> None:
+    """All loaded recipes must have a legal confidence value (Literal guard).
 
-    Flip individual recipes to `confidence: "tested"` in recipes.json only after
-    the author has actually played them through the pedal. If this test starts
-    failing because a recipe is tested=true, that's expected — update the count.
+    The Literal["tested","untested"] field rejects typos at load time, so this
+    is really just a sanity sweep — if it ever fails, something deeper is broken.
+
+    Note: we deliberately do NOT assert tested-count==0. The author flips
+    individual recipes to "tested" as they ear-test them; pinning a count would
+    force a test edit on every flip and discourage the direct-to-main workflow
+    for that lightweight kind of update.
     """
-    tested = [r for r in recipes if r.confidence == "tested"]
-    untested = [r for r in recipes if r.confidence == "untested"]
-    assert len(tested) + len(untested) == len(recipes), "unexpected confidence value"
-    # As of #7 landing, the entire starter set ships untested. The author can
-    # flip individual recipes to "tested" via direct-to-main commits (per
-    # WORKFLOW.md trivial-issue path) as they ear-test them.
-    assert len(tested) == 0, (
-        f"{len(tested)} recipes marked tested — has anyone actually ear-tested them? "
-        f"If yes, update this assertion to the new count and document which were tested."
+    legal = {"tested", "untested"}
+    bad = [r for r in recipes if r.confidence not in legal]
+    assert not bad, f"recipes with illegal confidence values: {[r.id for r in bad]}"
+
+
+def test_packaged_recipe_tags_survive_round_trip(recipes: list[Recipe]) -> None:
+    """The `tags` field name must match between recipes.json and the schema.
+
+    If someone typos `tags` to `tag` in the JSON, Pydantic silently defaults to
+    `[]` and no other test would catch it. Asserting at least one recipe has
+    non-empty tags confirms the field round-trips through the JSON load.
+    """
+    assert any(r.tags for r in recipes), (
+        "no recipe has a non-empty tags list — has the field name drifted between "
+        "recipes.json and the Recipe model?"
     )
 
 

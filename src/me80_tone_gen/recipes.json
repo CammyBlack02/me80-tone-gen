@@ -66,7 +66,7 @@
     },
     {
       "id": "surf-rock",
-      "aliases": ["surf rock", "surf", "wipeout", "misirlou", "dick dale", "spaghetti western", "spring and tremolo", "vintage surf"],
+      "aliases": ["surf rock", "surf", "wipeout", "spaghetti western", "spring and tremolo", "vintage surf"],
       "tags": ["surf", "instrumental", "1960s", "clean"],
       "description": "Classic surf: bright Fender-style clean, drippy spring reverb, lush tremolo. No drive, no modulation other than tremolo. The reverb level should be obvious — surf is half guitar, half reverb.",
       "patch": {
@@ -1570,7 +1570,7 @@
     },
     {
       "id": "worship-fallback",
-      "aliases": ["worship tone", "worship rhythm", "worship lead", "modern worship", "ambient worship clean", "church guitar"],
+      "aliases": ["worship tone", "worship rhythm", "modern worship", "ambient worship clean", "church guitar"],
       "tags": ["worship", "ambient", "fallback", "generic"],
       "description": "Generic modern worship fallback — clean preamp, light compression, generous delay and hall reverb stacked for pad-like ambience.",
       "patch": {
