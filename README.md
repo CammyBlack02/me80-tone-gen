@@ -151,3 +151,5 @@ If you want to use this commercially (host it with ads, embed it in a paid produ
 The `.tsl` format was reverse-engineered with reference to the community parser at [`johnsrude/BossToneStudio`](https://github.com/johnsrude/BossToneStudio). That repo provided the original `Contra_1.tsl` sample we use as the structural conformance reference (fetched via `scripts/fetch_reference.sh`, not bundled here).
 
 Built with [Ollama](https://ollama.com), [FastAPI](https://fastapi.tiangolo.com), and [Pydantic](https://pydantic.dev).
+
+The v0.1.0 implementation was paired with [Claude Code](https://claude.com/claude-code) (model: Claude Opus 4.7) in a single session. The spec, hardware verification, design decisions, and taste calls came from the author; Claude wrote most of the code and tests against that spec.
