@@ -9,11 +9,25 @@ Local-only natural-language → Boss ME-80 patch (`.tsl`) generator. CLI + FastA
 ## Pointers
 
 - **`README.md`** — user-facing overview, install, usage
-- **`WORKFLOW.md`** — how the author + Claude work on this (branches, PRs, releases, test discipline)
+- **`WORKFLOW.md`** — operational guide for how to actually work on an issue, start to finish
+- **`docs/superpowers/specs/2026-06-27-issue-workflow-design.md`** — the design rationale behind the workflow; the *why* behind WORKFLOW.md's *what*
 - **`BACKLOG.md`** — pre-issue ideas, investigation-needed work
 - **GitHub issues** — concrete actionable work, especially the tone-accuracy umbrella (`#6`)
 - **The spec** (author's iCloud, not in repo) — original design doc. Single source of truth for the `.tsl` format. If you don't have access to it, the headers/numbering Claude refers to (`§3.4`, `§4`, `§9.1`, etc.) are in there.
 - **Author's Obsidian "Tone Program" vault** (not in repo) — longer-form decision log + project plan doc. Updates land there for substantive design notes.
+
+## Workflow invariants
+
+- **Kickoff:** the user says "let's do #N" or confirms a Claude-suggested issue. One issue at a time. Never auto-pick the next issue.
+- **Two paths only:** Trivial (one file, ≤ ~30 min, data/doc/README/single-recipe) → direct to `main`. Real (multi-file, > ~30 min, code change) → worktree + branch + PR. When unsure, treat as Real.
+- **Real-issue PR review order is fixed:** (1) `superpowers:requesting-code-review` → (2) `simplify` skill → (3) `security-review` skill → (4) human review in PR view. Simplify findings are advisory; reject them if they hurt clarity. If simplify made > 5-line logic changes, re-run code review briefly before security.
+- **Trivial issues skip all agent reviews.** Self-review carefully before pushing.
+- **Tests are written alongside code,** not before (no TDD ceremony) and not after (no test-debt). New behavior gets coverage.
+- **Mid-work decisions stay in chat.** Don't manufacture a paper trail. Substantive design notes go to Obsidian only when worth re-finding.
+- **Branch naming:** `feat/NN-short-name`, `fix/NN-short-name`, `chore/NN-short-name`, `docs/NN-short-name`. `NN` is the issue number.
+- **Squash merge** for PRs. Clean linear history on `main`; the branch's intermediate commits stay in the PR.
+
+If a process question comes up that this list doesn't answer, defer to `WORKFLOW.md` (operational) or the design doc (rationale).
 
 ## Architectural invariants (don't violate without discussion)
 

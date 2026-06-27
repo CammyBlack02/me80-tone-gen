@@ -2,86 +2,155 @@
 
 This is a "how we work" doc — not a contributor guide for outside contributors. The project is licensed [PolyForm Noncommercial](LICENSE); outside contributions aren't actively solicited.
 
-The intended audience is the author and any Claude Code (or similar) agent paired in on the work. The goal: enough structure to stay disciplined, not so much that it becomes ceremony.
+The intended audience is the author and any Claude Code (or similar) agent paired in on the work. The full design rationale is in [`docs/superpowers/specs/2026-06-27-issue-workflow-design.md`](docs/superpowers/specs/2026-06-27-issue-workflow-design.md); this file is the operational version.
 
-## Decision: where work lives
+## Kickoff
 
-| Work type | Where |
-|---|---|
-| Typos, comment edits, one-line fixes, README polish | Direct commit to `main` |
-| A new recipe in `recipes.json` | Direct commit to `main` |
-| Anything multi-file or > a few minutes | Issue + feature branch + PR |
-| Half-formed ideas, "what if X" notes, longer narrative | Obsidian (`Personal Mac/Tone Program/`) — not committed |
-| Broad project plan + status | Obsidian's `00 — Project Plan & Status.md` |
-| Decision log: "why we picked X over Y" | Obsidian; promote to a repo doc only if it shapes contributor behaviour |
+The user says **"let's do #N"** (or Claude suggests an issue and the user confirms). One issue at a time. Nothing runs automatically.
 
-## Branch + PR convention (for the multi-file work)
+## Two paths
+
+| Path | Triggers when | Mechanism |
+|---|---|---|
+| **Trivial** | One file, ≤ ~30 min, data/doc/README/single-recipe | Edit on main checkout → commit → push. No branch, no PR, no agent reviews. |
+| **Real** | Multi-file, > ~30 min, code change | Worktree + branch + PR + three agent reviews + human review |
+
+If you can't decide which, treat it as Real. The cost of an unnecessary PR is small; the cost of skipping review on something that needed it is larger.
+
+## Real-issue flow
+
+### 1. Pick
 
 ```bash
-# Start from a fresh main
-git checkout main && git pull
-
-# Branch named feat/<thing>, fix/<thing>, chore/<thing>, or docs/<thing>
-git checkout -b feat/visual-pedalboard
-
-# ... do the work ...
-
-# Push the branch
-git push -u origin feat/visual-pedalboard
-
-# Open a PR (reads "closes #N" or "refs #N" to link the issue)
-gh pr create --title "Visual pedalboard UI" --body "Closes #1. ..."
-
-# Self-review: read the diff in the PR view cold, not in your editor
-gh pr view --web
-
-# Merge when satisfied — squash is fine for tidy history
-gh pr merge --squash --delete-branch
+gh issue view <N>     # re-read the scope cold
 ```
 
-The point of the PR even when solo: reading the diff in PR view is genuinely different from reading it in your editor. You catch things.
+If the scope has held up, proceed. If anything's changed, update the issue first.
+
+### 2. Set up the worktree
+
+```bash
+cd ~/Development/me80-tone-gen
+git worktree add ../me80-tone-gen-worktrees/feat-NN-short-name -b feat/NN-short-name
+cd ../me80-tone-gen-worktrees/feat-NN-short-name
+python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
+```
+
+Branch naming: `feat/NN-short-name`, `fix/NN-short-name`, `chore/NN-short-name`, `docs/NN-short-name`. `NN` is the issue number.
+
+### 3. Implement
+
+- Tests are written alongside new behavior. No TDD ceremony; no test-after laziness.
+- Mid-work decisions stay in chat. Don't manufacture a paper trail.
+- Check in with the user when an ambiguous call has non-trivial cost, when the issue's scope no longer makes sense, or when a surprise comes up. Otherwise work continuously.
+- If the work is bigger than the issue suggested, stop and renegotiate scope rather than silently expanding.
+
+### 4. Open the PR
+
+```bash
+git push -u origin feat/NN-short-name
+gh pr create --title "<short imperative>" --body "Closes #NN.
+
+<one-to-three line why>
+
+<acceptance per the issue>"
+```
+
+### 5. Three agent review passes (in order)
+
+```
+1. Agent code review     ← Skill: superpowers:requesting-code-review
+   Correctness, architecture, missed edge cases.
+   Address real findings, push fixups.
+
+2. Agent simplify pass   ← Skill: simplify  
+   Over-engineering, dead code, single-caller helpers, unnecessary abstractions.
+   Findings are ADVISORY. Reject anything that hurts clarity or removes a
+   deliberate seam. Not optimizing for line count.
+
+3. Agent security review ← Skill: security-review
+   Secrets, injection, path traversal, CORS, leaked auth, deserialization.
+   Especially important post-#9/#10 with external API integrations.
+```
+
+If simplify made > 5-line changes that affect logic, re-run code review briefly before security. Otherwise proceed straight through.
+
+### 6. Human review
+
+You read the diff in PR view (`gh pr view --web`), cold. Different mental mode than editor — catches different things. The agents are scaffolding; your eyes are the final gate.
+
+### 7. Merge & clean
+
+```bash
+gh pr merge --squash --delete-branch
+cd ~/Development/me80-tone-gen
+git pull
+git worktree remove ../me80-tone-gen-worktrees/feat-NN-short-name
+```
+
+Squash for clean linear history on main; the branch's intermediate commits stay in the PR for posterity. "Closes #NN" in PR body auto-closes the issue.
+
+### 8. Verify (when relevant, can happen after merge)
+
+| Change touches | Verification |
+|---|---|
+| Recipe values | Ear-test priority recipes through the pedal; mark untested honestly with `confidence: "untested"`. Don't gate merge on slow physical-world feedback. |
+| Writer / `.tsl` format | Generate a `.tsl`, import into BTS, confirm it loads. ~2-min smoke. |
+| Web UI | Server smoke (agent does), browser eyeball (human does). |
+| Pure refactor | Tests pass = good. |
+
+## Trivial-issue flow
+
+```bash
+# Edit directly in main checkout
+vim <file>
+
+# Commit + push
+git add <file>
+git commit -m "..."
+git push
+```
+
+Trivial means: README polish, single recipe add, docstring fix, typo. If the change touches Python code, lean toward Real.
 
 ## Commit messages
 
-Title under 70 chars, imperative ("Add X" not "Added X"). Body explains *why* if non-obvious. Reference issues with `closes #N`, `refs #N`, `part of #N`. Co-author trailer for Claude-paired work.
-
-Example:
-
-```
-Add visual pedalboard component to web UI
-
-Replaces the text-only knob list with an SVG signal-chain view.
-Each block renders as a card; rotary knobs draw as dial positions
-mapped from 0-99 to 270° rotation.
-
-Closes #1.
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
-```
-
-## Issue hygiene
-
-- One concrete actionable thing per issue. "Recipe expansion" is fine if scoped to the gaps listed; "make the tool better" is not.
-- Use labels: `recipes`, `ui`, `infrastructure`, `prompt-engineering`, `enhancement`, `bug`, `documentation`. Keep the set small.
-- Close issues via commit message (`closes #N`) — keeps the link in history.
-- Don't create issues for ideas you might never do. That's what Obsidian is for.
+- Imperative title under 70 chars
+- Body explains *why* if non-obvious
+- `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` trailer when paired
+- Reference issues: `Closes #N`, `Refs #N`, `Part of #N`
 
 ## Releases
 
-- Patch / minor / major per [SemVer](https://semver.org). v0.x.y while we're pre-1.0.
-- Release process:
-  1. Make sure `main` is clean, tests pass, version bumped in `pyproject.toml`.
-  2. `git tag -a vX.Y.Z -m "<short summary>"` and `git push --follow-tags`.
-  3. `gh release create vX.Y.Z --title "..." --notes "..."` — paste notes from the changelog of work since the previous tag.
+Occasional, every 3–5 issues. No fixed cadence.
+
+```bash
+# Bump version in pyproject.toml
+git tag -a vX.Y.Z -m "<short summary>"
+git push --follow-tags
+gh release create vX.Y.Z --title "..." --notes "..."
+```
+
+Patch / minor / major per [SemVer](https://semver.org). v0.x.y while pre-1.0.
+
+## Where work lives
+
+| Work type | Where |
+|---|---|
+| Concrete actionable items | GitHub Issues |
+| Pre-issue ideas, investigation needed | [`BACKLOG.md`](BACKLOG.md) |
+| Half-formed ideas, longer narrative, "what if X" notes | Author's Obsidian "Tone Program" vault |
+| Project plan + status | Obsidian's `00 — Project Plan & Status.md` |
+| Workflow design rationale | [`docs/superpowers/specs/`](docs/superpowers/specs/) |
 
 ## Test discipline
 
-- `pytest` should pass on `main` at all times. If it doesn't, fixing it is more urgent than whatever else is queued.
-- Tests anchored to the optional `data/Contra_1.tsl` reference will skip when it's absent — run `./scripts/fetch_reference.sh` locally if you want the full suite.
-- New code paths get tests where the test would catch a real bug, not as a ritual.
+- `pytest` must pass on `main` at all times. If it doesn't, fixing it is more urgent than queued work.
+- Without `data/Contra_1.tsl`, 25/34 tests pass and 9 skip — run `./scripts/fetch_reference.sh` for the full suite locally.
+- Generator unit tests use a `FakeOllama` client. Never hit real Ollama in unit tests, only in manual smoke tests.
 
 ## Working with Claude
 
-- Pair-programming style: Claude opens the branch, makes the changes, opens the PR. Author reviews the diff and merges (or asks for changes).
-- Prefer one issue per session — keeps context tight and the diff bounded.
-- Claude reads `WORKFLOW.md` and `CLAUDE.md` at session start. Anything important to remember between sessions goes in those docs or in Claude's memory system, not buried in a chat scrollback.
+- Pair-programming style: Claude opens the branch, makes changes, opens the PR. Author reviews the diff and merges (or asks for changes).
+- One issue per session keeps context tight.
+- Claude reads `CLAUDE.md` at session start — invariants and pointers live there. This file is the operational counterpart.
