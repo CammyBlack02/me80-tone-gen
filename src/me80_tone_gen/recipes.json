@@ -1599,6 +1599,38 @@
         "reverb": {"enabled": true, "type": "HALL", "level": 80},
         "pedal_fx": {"enabled": false, "type": "WAH"}
       }
+    },
+    {
+      "id": "drop-d-via-pitch-shift",
+      "aliases": ["drop d", "drop d tuning", "drop d via pitch shift", "whole step down", "tuned down a whole step", "d standard", "play drop d in standard tuning", "digitech drop", "drop pedal"],
+      "tags": ["pitch-shift", "drop-tuning", "utility", "tuning", "mod"],
+      "description": "Whole-step-down via MOD → PITCH SHIFT — set MOD type to PITCH SHIFT, knob1 ≈ 45 for -2 semitones (estimated; verify by ear). NOTE: a pitch shifter moves ALL strings uniformly, so this is technically 'D standard' tuning, not literal drop D where only the low E drops. Most musicians use this trick exactly as the DigiTech Drop pedal does: keep the guitar in standard tuning, set this patch, and finger drop-D shapes. Knob values are starting points — the exact knob1→semitone mapping isn't documented in the spec; refine through the pedal. CRUNCH preamp baseline is versatile; LLM should tweak based on the user's genre context.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CRUNCH", "gain": 55, "bass": 55, "middle": 55, "treble": 60, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": true, "type": "PITCH SHIFT", "knob1": 45, "knob2": 50, "knob3": 70},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 20},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "eb-half-step-via-pitch-shift",
+      "aliases": ["e flat tuning", "eb tuning", "half step down", "tuned half step down", "tuned down a half step", "eb standard", "hendrix tuning", "e flat standard"],
+      "tags": ["pitch-shift", "downtune", "utility", "tuning", "mod"],
+      "description": "Half-step-down (E♭ standard) via MOD → PITCH SHIFT — set MOD type to PITCH SHIFT, knob1 ≈ 47 for -1 semitone (estimated; verify by ear). Same uniform-shift caveat as drop-d-via-pitch-shift. Useful for Hendrix-style E♭ tuning songs, classic rock half-step-down stuff, or anything written in E♭ that you don't want to retune for. Knob1→semitone mapping needs ear-verification — the spec leaves per-type knob meanings undocumented for the MOD block.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CRUNCH", "gain": 50, "bass": 50, "middle": 55, "treble": 60, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": true, "type": "PITCH SHIFT", "knob1": 47, "knob2": 50, "knob3": 70},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 20},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
     }
   ]
 }
