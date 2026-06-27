@@ -17,6 +17,7 @@ from .recipes import Recipe, load_recipes, match_recipe
 from .renderer import render_knob_list
 from .schema import SemanticPatch
 from .spotify import (
+    AudioFeatures,
     SpotifyClient,
     SpotifyError,
     format_features_one_line,
@@ -47,7 +48,7 @@ def _generate_one(
     description: str,
     args: argparse.Namespace,
     recipes: list[Recipe],
-    audio_features=None,
+    audio_features: AudioFeatures | None = None,
 ) -> tuple[SemanticPatch, Recipe | None]:
     recipe = None if args.no_recipes else match_recipe(description, recipes)
     seed = recipe.model_dump(exclude={"aliases"}) if recipe else None

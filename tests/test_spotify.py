@@ -168,6 +168,50 @@ def test_token_endpoint_401_raises_auth_error() -> None:
             client._ensure_token()
 
 
+def test_ensure_token_wraps_url_error_as_spotify_error() -> None:
+    import urllib.error
+    client = SpotifyClient(client_id="id", client_secret="secret")
+    with patch(
+        "me80_tone_gen.spotify.urllib.request.urlopen",
+        side_effect=urllib.error.URLError("dns failure"),
+    ):
+        with pytest.raises(SpotifyError) as exc_info:
+            client._ensure_token()
+        # Must not be the auth subclass — network failures aren't credential bugs.
+        assert not isinstance(exc_info.value, SpotifyAuthError)
+
+
+def test_ensure_token_wraps_timeout_as_spotify_error() -> None:
+    client = SpotifyClient(client_id="id", client_secret="secret")
+    with patch(
+        "me80_tone_gen.spotify.urllib.request.urlopen",
+        side_effect=TimeoutError("timed out"),
+    ):
+        with pytest.raises(SpotifyError) as exc_info:
+            client._ensure_token()
+        assert not isinstance(exc_info.value, SpotifyAuthError)
+
+
+def test_ensure_token_wraps_non_json_body_as_spotify_error() -> None:
+    client = SpotifyClient(client_id="id", client_secret="secret")
+
+    def fake_urlopen(*args, **kwargs):
+        Ctx = type(
+            "Ctx",
+            (),
+            {
+                "__enter__": lambda self_: io.BytesIO(b"<html>maintenance</html>"),
+                "__exit__": lambda self_, *exc: False,
+            },
+        )
+        return Ctx()
+
+    with patch("me80_tone_gen.spotify.urllib.request.urlopen", side_effect=fake_urlopen):
+        with pytest.raises(SpotifyError) as exc_info:
+            client._ensure_token()
+        assert not isinstance(exc_info.value, SpotifyAuthError)
+
+
 def test_get_translates_http_errors() -> None:
     client = SpotifyClient(client_id="id", client_secret="secret")
     client._token = "abc"
@@ -184,6 +228,55 @@ def test_get_translates_http_errors() -> None:
     with patch("me80_tone_gen.spotify.urllib.request.urlopen", side_effect=_http_error(500)):
         with pytest.raises(SpotifyError) as exc_info:
             client._get("/audio-features/missing")
+        assert not isinstance(exc_info.value, (SpotifyAuthError, SpotifyNotFoundError))
+
+
+def test_get_wraps_url_error_as_spotify_error() -> None:
+    import urllib.error
+    client = SpotifyClient(client_id="id", client_secret="secret")
+    client._token = "abc"
+    client._token_expires_at = time.time() + 3600
+    with patch(
+        "me80_tone_gen.spotify.urllib.request.urlopen",
+        side_effect=urllib.error.URLError("dns failure"),
+    ):
+        with pytest.raises(SpotifyError) as exc_info:
+            client._get("/audio-features/abc")
+        assert not isinstance(exc_info.value, (SpotifyAuthError, SpotifyNotFoundError))
+
+
+def test_get_wraps_timeout_as_spotify_error() -> None:
+    client = SpotifyClient(client_id="id", client_secret="secret")
+    client._token = "abc"
+    client._token_expires_at = time.time() + 3600
+    with patch(
+        "me80_tone_gen.spotify.urllib.request.urlopen",
+        side_effect=TimeoutError("timed out"),
+    ):
+        with pytest.raises(SpotifyError) as exc_info:
+            client._get("/audio-features/abc")
+        assert not isinstance(exc_info.value, (SpotifyAuthError, SpotifyNotFoundError))
+
+
+def test_get_wraps_non_json_body_as_spotify_error() -> None:
+    client = SpotifyClient(client_id="id", client_secret="secret")
+    client._token = "abc"
+    client._token_expires_at = time.time() + 3600
+
+    def fake_urlopen(*args, **kwargs):
+        Ctx = type(
+            "Ctx",
+            (),
+            {
+                "__enter__": lambda self_: io.BytesIO(b"<html>maintenance</html>"),
+                "__exit__": lambda self_, *exc: False,
+            },
+        )
+        return Ctx()
+
+    with patch("me80_tone_gen.spotify.urllib.request.urlopen", side_effect=fake_urlopen):
+        with pytest.raises(SpotifyError) as exc_info:
+            client._get("/audio-features/abc")
         assert not isinstance(exc_info.value, (SpotifyAuthError, SpotifyNotFoundError))
 
 

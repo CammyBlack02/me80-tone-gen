@@ -118,6 +118,8 @@ class SpotifyClient:
             raise SpotifyAuthError(
                 f"Spotify token endpoint returned {exc.code}: check client credentials"
             ) from exc
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            raise SpotifyError(f"Spotify token endpoint unreachable: {exc}") from exc
 
         self._token = payload["access_token"]
         self._token_expires_at = time.time() + float(payload["expires_in"])
@@ -140,6 +142,8 @@ class SpotifyClient:
                     f"Spotify API {exc.code} for {path} — credentials rejected"
                 ) from exc
             raise SpotifyError(f"Spotify API error {exc.code} for {path}") from exc
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            raise SpotifyError(f"Spotify API unreachable for {path}: {exc}") from exc
 
     def features_from_url(self, track_url: str) -> tuple[AudioFeatures, TrackInfo]:
         """Resolve a Spotify track URL/URI to its audio features and metadata."""
@@ -188,7 +192,7 @@ def format_features_for_prompt(features: AudioFeatures) -> str:
     return (
         "Track audio features (real signal about the source song):\n"
         f"- tempo: {features.tempo:.0f} bpm\n"
-        f"- energy: {features.energy:.2f} ({_qual(features.energy, 'high', 'medium', 'low')})\n"
+        f"- energy: {features.energy:.2f} ({_qual(features.energy, 'high', 'mid', 'low')})\n"
         f"- loudness: {features.loudness:.1f} dB\n"
         f"- key: {key_label}, mode: {mode_label}\n"
         f"- acousticness: {features.acousticness:.2f} "
