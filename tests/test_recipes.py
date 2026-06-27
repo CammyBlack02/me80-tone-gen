@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
-from me80_tone_gen.recipes import Recipe, load_recipes, match_recipe
+from me80_tone_gen.recipes import Recipe, RecipeBook, load_recipes, match_recipe
 
 
 @pytest.fixture(scope="module")
@@ -54,22 +55,10 @@ def test_matcher_is_case_insensitive(recipes: list[Recipe]) -> None:
 
 def test_matcher_prefers_more_specific_alias_on_tie() -> None:
     """When two recipes match, the one with the longer matching alias wins."""
-    # Construct a synthetic recipe book where two recipes match but one alias
-    # is more specific than the other.
-    from me80_tone_gen.recipes import RecipeBook
-
-    short = Recipe.model_validate({
-        "id": "short-match",
-        "aliases": ["rock"],
-        "description": "n/a",
-        "patch": _minimal_patch(),
-    })
-    long = Recipe.model_validate({
-        "id": "specific-match",
-        "aliases": ["classic hard rock rhythm"],
-        "description": "n/a",
-        "patch": _minimal_patch(),
-    })
+    short = Recipe.model_validate(_minimal_recipe(id="short-match", aliases=["rock"]))
+    long = Recipe.model_validate(
+        _minimal_recipe(id="specific-match", aliases=["classic hard rock rhythm"])
+    )
     book = RecipeBook(recipes=[short, long]).recipes
 
     r = match_recipe("classic hard rock rhythm tone", book)
@@ -97,7 +86,43 @@ def test_recipe_patches_use_valid_knob_range(recipes: list[Recipe]) -> None:
                 assert 0 <= v <= 99, f"{r.id}.{block_name}.{k}={v} out of 0-99"
 
 
-# --- helper ---
+# ---------- confidence + tags schema fields ----------
+
+
+@pytest.mark.parametrize(
+    "override,field,expected",
+    [
+        ({}, "confidence", "untested"),
+        ({"confidence": "tested"}, "confidence", "tested"),
+        ({}, "tags", []),
+        ({"tags": ["metal", "1980s", "lead"]}, "tags", ["metal", "1980s", "lead"]),
+    ],
+)
+def test_recipe_optional_field_default_or_override(override: dict, field: str, expected: object) -> None:
+    r = Recipe.model_validate(_minimal_recipe(**override))
+    assert getattr(r, field) == expected
+
+
+def test_confidence_rejects_other_values() -> None:
+    """Only 'tested' / 'untested' allowed — protects against typos like 'verified'."""
+    with pytest.raises(ValidationError):
+        Recipe.model_validate(_minimal_recipe(confidence="verified"))
+
+
+def test_packaged_recipe_tags_survive_round_trip(recipes: list[Recipe]) -> None:
+    """The `tags` field name must match between recipes.json and the schema.
+
+    If someone typos `tags` to `tag` in the JSON, Pydantic silently defaults to
+    `[]` and no other test would catch it. Asserting at least one recipe has
+    non-empty tags confirms the field round-trips through the JSON load.
+    """
+    assert any(r.tags for r in recipes), (
+        "no recipe has a non-empty tags list — has the field name drifted between "
+        "recipes.json and the Recipe model?"
+    )
+
+
+# --- helpers ---
 
 def _minimal_patch() -> dict:
     return {
@@ -110,3 +135,10 @@ def _minimal_patch() -> dict:
         "reverb": {"enabled": False, "type": "ROOM", "level": 50},
         "pedal_fx": {"enabled": False, "type": "WAH"},
     }
+
+
+def _minimal_recipe(**overrides: object) -> dict:
+    """Build a minimal valid Recipe payload, with any field optionally overridden."""
+    base = {"id": "x", "aliases": ["x"], "description": "x", "patch": _minimal_patch()}
+    base.update(overrides)
+    return base
