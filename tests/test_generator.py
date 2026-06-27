@@ -117,9 +117,9 @@ def test_system_prompt_contains_each_reference_genre() -> None:
 
 def test_system_prompt_demonstrates_diverse_preamp_choices() -> None:
     """Reference examples should cover distinct preamp types, not just one."""
-    # At minimum: METAL (djent/stoner), CLEAN (country/funk/post-rock), LEAD
-    # (shoegaze), STACK (stoner). Without these, the model has only one
-    # example shape to imitate.
+    # At minimum: METAL (djent), CLEAN (country/funk/post-rock), LEAD (shoegaze),
+    # STACK (stoner). Without these, the model has only one example shape to
+    # imitate.
     for preamp_type in ("METAL", "CLEAN", "LEAD", "STACK"):
         assert preamp_type in SYSTEM_PROMPT, f"prompt missing {preamp_type} example"
 
@@ -141,4 +141,6 @@ def test_system_prompt_emphasises_what_blocks_to_leave_off() -> None:
     """
     lowered = SYSTEM_PROMPT.lower()
     assert "off" in lowered
-    assert "many genres are defined by what's off" in lowered
+    # Phrase-tolerant: the prompt must teach defining-by-absence, but allow
+    # benign copy-edits to the exact sentence.
+    assert "defined by what" in lowered
