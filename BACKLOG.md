@@ -76,6 +76,43 @@ Door stays open either way; this investigation makes the issue ready to write th
 
 ---
 
+## Direct USB MIDI to the ME-80 (eliminate the BTS-Import step)
+
+**Status:** investigation in progress
+**Why here, not as an issue:** the ME-80 has no documented SysEx parameter-write path (spec §1). Reverse-engineering may or may not be tractable; we won't know until we look.
+
+**Why it's interesting:**
+- Inspired by [`ArthurVaiselbuh/KatanaToneStream`](https://github.com/ArthurVaiselbuh/KatanaToneStream), which writes directly to a Katana via reverse-engineered Roland DT1 SysEx. They eliminated the BTS import step entirely — generate, hear instantly.
+- Today our pipeline ends at "open BTS, Import, drag onto slot." Three GUI steps in a third-party Intel-binary app (BTS isn't Apple-Silicon native), a real failure-point dependency.
+- The bigger value isn't shaving 30 seconds off gig prep — it's enabling a real iterative tweak loop ("generate, hear, tweak, hear again") that the file-roundtrip currently makes tedious.
+
+**What we don't know:**
+- Whether the BTS-to-pedal USB protocol for ME-80 is reverse-engineerable like Katana's was
+- Whether it allows fine-grained parameter writes (Katana-style) OR is bulk-upload only
+- Whether it's standard Roland SysEx, proprietary binary, or obfuscated
+
+**Three possible outcomes:**
+
+1. **Fine-grained protocol** (Katana-style) → ~2-3 sessions to build, big UX win, eliminates BTS dependency entirely
+2. **Bulk-upload only** → ~1 session to build, modest UX win (skip the drag), still removes BTS from the path
+3. **Encrypted / opaque** → drop the idea, BTS Import stays the path
+
+**Investigation plan:**
+
+Phase 1 — research-only (no hardware): scan public reverse-engineering work, GitHub repos that talk to ME-80 over USB, forum threads, Roland-published MIDI implementation guides. If anyone's already documented this, we know which bucket we're in without sniffing.
+
+Phase 2 — live USB capture (needs hardware connected): if phase 1 is inconclusive, capture USB traffic while BTS imports a liveset using `PacketLogger` (macOS) or `usbmon` + Wireshark (Linux). Decode the bytes against the MIDI / Roland DT1 standards. ~1-2 hours of interactive work with the author.
+
+**Promote to an issue when:**
+- Phase 1 or 2 confirms the protocol is reverse-engineerable AND tractable, AND
+- Author is willing to commit 2-3 sessions to the implementation.
+
+**Skip if:**
+- Protocol turns out to be opaque/obfuscated
+- BTS Import is "good enough" once setlist generation lands (#5) — the friction may matter less when you import a single bank rather than tweaking iteratively
+
+---
+
 ## Apple Music playlist integration (for the setlist feature, see `#5`)
 
 **Status:** deferred indefinitely
