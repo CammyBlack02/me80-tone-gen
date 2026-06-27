@@ -11,8 +11,9 @@ from typing import Any
 
 import pytest
 
-from me80_tone_gen.generator import SYSTEM_PROMPT, GenerationError, generate_patch
+from me80_tone_gen.generator import SYSTEM_PROMPT, GenerationError, _user_prompt, generate_patch
 from me80_tone_gen.schema import SemanticPatch
+from me80_tone_gen.spotify import AudioFeatures
 
 
 class FakeOllama:
@@ -147,3 +148,37 @@ def test_system_prompt_demonstrates_off_state_concretely() -> None:
         f"expected at least 18 ': off' block lines in the few-shot examples, "
         f"got {off_block_lines}"
     )
+
+
+# ---------- audio_features integration ----------
+
+
+def test_user_prompt_without_audio_features_omits_block() -> None:
+    text = _user_prompt("warm bluesy lead", recipe_seed=None, audio_features=None)
+    assert "Track audio features" not in text
+    assert "Tone description: warm bluesy lead" in text
+
+
+def test_user_prompt_with_audio_features_includes_block() -> None:
+    features = AudioFeatures(
+        tempo=140.0, energy=0.92, loudness=-4.2,
+        key=9, mode=0,
+        acousticness=0.01, instrumentalness=0.18, valence=0.34,
+    )
+    text = _user_prompt("warm bluesy lead", recipe_seed=None, audio_features=features)
+    assert "Track audio features" in text
+    assert "tempo: 140 bpm" in text
+    assert "energy: 0.92" in text
+
+
+def test_generate_patch_forwards_audio_features_to_prompt() -> None:
+    fake = FakeOllama([_valid_patch_json()])
+    features = AudioFeatures(120, 0.5, -8, 0, 1, 0.5, 0.5, 0.5)
+    generate_patch("test", client=fake, retries=0, audio_features=features)
+    user_msg = fake.calls[0]["messages"][-1]["content"]
+    assert "Track audio features" in user_msg
+
+
+def test_system_prompt_includes_audio_features_guidance() -> None:
+    assert "Track audio features" in SYSTEM_PROMPT
+    assert "acousticness" in SYSTEM_PROMPT.lower()

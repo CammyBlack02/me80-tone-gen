@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pydantic import ValidationError
 
 from .schema import SemanticPatch
+from .spotify import AudioFeatures, format_features_for_prompt
 
 DEFAULT_MODEL = "qwen2.5:14b"
 DEFAULT_TEMPERATURE = 0.3
@@ -114,6 +115,14 @@ When you generate, ask yourself per block: would this style HAVE this effect on?
 Many genres are defined by what's OFF as much as what's on. Don't enable blocks
 "just to fill space" — and don't leave a defining effect off because you forgot.
 
+If the user provides "Track audio features" below, treat them as grounding
+signal alongside the description. High energy and low acousticness mean push
+the gain; high acousticness means CLEAN preamp and lighter effects; low
+instrumentalness (vocal-led) means the tone should sit in the mix, not stand
+out. Use loudness, tempo, and valence as supporting context for how aggressive
+or restrained the tone should be. Features inform — they do not override the
+description or recipe.
+
 Output a single JSON object matching the schema. Every block MUST appear in the
 output. No prose outside the `rationale` field.
 """
@@ -131,7 +140,11 @@ class GenerationError(Exception):
         return self.message
 
 
-def _user_prompt(description: str, recipe_seed: dict | None) -> str:
+def _user_prompt(
+    description: str,
+    recipe_seed: dict | None,
+    audio_features: "AudioFeatures | None" = None,
+) -> str:
     parts = [f"Tone description: {description}"]
     if recipe_seed:
         # Curated recipe matched against the description — give the model a clear
@@ -150,6 +163,8 @@ def _user_prompt(description: str, recipe_seed: dict | None) -> str:
             "Reference recipe patch settings:"
         )
         parts.append(json.dumps(patch, indent=2))
+    if audio_features is not None:
+        parts.append(format_features_for_prompt(audio_features))
     return "\n\n".join(parts)
 
 
@@ -160,6 +175,7 @@ def generate_patch(
     temperature: float = DEFAULT_TEMPERATURE,
     retries: int = DEFAULT_RETRIES,
     recipe_seed: dict | None = None,
+    audio_features: "AudioFeatures | None" = None,
     client: "object | None" = None,
 ) -> SemanticPatch:
     """Generate one SemanticPatch from a tone description.
@@ -174,7 +190,7 @@ def generate_patch(
     schema = SemanticPatch.model_json_schema()
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": _user_prompt(description, recipe_seed)},
+        {"role": "user", "content": _user_prompt(description, recipe_seed, audio_features)},
     ]
 
     last_raw = ""
