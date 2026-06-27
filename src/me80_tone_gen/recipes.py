@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 from importlib.resources import files
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -49,6 +50,11 @@ class Recipe(BaseModel):
     aliases: list[str] = Field(min_length=1)
     description: str
     patch: RecipePatch
+    # Default "untested" — only flip to "tested" after the author has ear-tested
+    # the recipe through the actual pedal. See CLAUDE.md anti-patterns: untested
+    # Claude-seeded values are fine as seeds, not as verified curated values.
+    confidence: Literal["tested", "untested"] = "untested"
+    tags: list[str] = Field(default_factory=list)
 
 
 class RecipeBook(BaseModel):
