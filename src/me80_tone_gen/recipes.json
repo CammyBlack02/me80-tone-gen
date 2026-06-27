@@ -1183,6 +1183,422 @@
         "reverb": {"enabled": true, "type": "ROOM", "level": 20},
         "pedal_fx": {"enabled": false, "type": "WAH"}
       }
+    },
+    {
+      "id": "country-twang-tele",
+      "aliases": ["country twang tele", "brad paisley", "brent mason", "telecaster twang", "country lead tele", "chicken pickin"],
+      "tags": ["country", "telecaster", "lead", "modern"],
+      "description": "Bright Telecaster twang — clean Fender-style amp with heavy compression for sustain and even attack, short slap-back delay, light room. The compressor is the secret to country twang.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 45, "middle": 65, "treble": 80, "level": 80},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 75, "knob2": 65, "knob3": 70},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 22, "feedback": 12, "e_level": 28},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 25},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "outlaw-country-rhythm",
+      "aliases": ["outlaw country", "waylon jennings", "merle haggard rhythm", "country rhythm dirt", "tweed country rhythm"],
+      "tags": ["country", "outlaw-country", "rhythm", "vintage"],
+      "description": "Tweed-amp country rhythm with just enough grit to dig in — gain on the edge of breakup, no separate drive pedal, light slap-back, light room.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "TWEED", "gain": 45, "bass": 50, "middle": 60, "treble": 65, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 55, "knob2": 55, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 25, "feedback": 15, "e_level": 25},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 30},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "modern-country-radio",
+      "aliases": ["modern country", "keith urban", "country pop", "country radio", "stadium country lead"],
+      "tags": ["country", "country-pop", "modern", "2010s", "lead"],
+      "description": "Modern country radio lead — clean preamp pushed slightly, light compression, generous delay for sustain and width, hall reverb behind. Sounds polished, not vintage.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 40, "bass": 50, "middle": 60, "treble": 75, "level": 80},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 60, "knob2": 55, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 50, "feedback": 30, "e_level": 40},
+        "reverb": {"enabled": true, "type": "HALL", "level": 45},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "nashville-hot-licks",
+      "aliases": ["nashville hot licks", "vince gill lead", "nashville session lead", "studio country lead"],
+      "tags": ["country", "session", "lead", "telecaster"],
+      "description": "Bright Telecaster session-style country lead with strong compression, edge-of-breakup gain, short delay for note ring-out. Articulate over loud.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "TWEED", "gain": 50, "bass": 45, "middle": 65, "treble": 75, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 70, "knob2": 60, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 30, "feedback": 20, "e_level": 30},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 30},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "wes-montgomery-octaves",
+      "aliases": ["wes montgomery", "jazz octaves", "thumb-picked jazz", "warm hollow body jazz"],
+      "tags": ["jazz", "jazz-octaves", "lead", "1960s", "warm"],
+      "description": "Warm hollow-body jazz — clean preamp with treble rolled back, no drive, no modulation, very light room. The dark, woody tone of a thumb-picked Gibson L-5.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 60, "middle": 55, "treble": 30, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 20},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "pat-metheny-warm-lead",
+      "aliases": ["pat metheny", "metheny lead", "warm jazz lead delay", "smooth jazz lead with chorus"],
+      "tags": ["jazz", "jazz-fusion", "lead", "warm", "delay"],
+      "description": "Pat Metheny-style warm fusion lead — clean preamp, subtle chorus for movement, generous delay for that signature spaciousness, hall reverb. Treble rolled back from sparkly into woody.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 55, "middle": 60, "treble": 45, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 60},
+        "mod": {"enabled": true, "type": "CHORUS", "knob1": 30, "knob2": 35, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 55, "feedback": 35, "e_level": 40},
+        "reverb": {"enabled": true, "type": "HALL", "level": 50},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "larry-carlton-room-335",
+      "aliases": ["larry carlton", "room 335", "smooth jazz blues", "es-335 jazz fusion"],
+      "tags": ["jazz-fusion", "blues-jazz", "lead", "es-335", "smooth"],
+      "description": "Larry Carlton smooth ES-335 fusion tone — gently driven tube amp, gain on the edge of breakup, mid-forward, light reverb. Cleans up beautifully with the volume knob.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CRUNCH", "gain": 45, "bass": 50, "middle": 65, "treble": 55, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 35},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "scofield-fusion",
+      "aliases": ["john scofield", "scofield fusion", "outside jazz fusion", "gritty fusion lead"],
+      "tags": ["jazz-fusion", "lead", "modern", "gritty"],
+      "description": "John Scofield bitey fusion — moderately driven amp, mid-forward, light overdrive to give phrases bite without going full distortion. No modulation. Light room.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "LEAD", "gain": 45, "bass": 50, "middle": 65, "treble": 55, "level": 70},
+        "od_ds": {"enabled": true, "type": "OVERDRIVE", "drive": 25, "tone": 50, "level": 55},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 30},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "george-benson-warm-clean",
+      "aliases": ["george benson", "smooth jazz clean", "hollow body clean", "warm jazz comp"],
+      "tags": ["jazz", "smooth-jazz", "clean", "hollow-body"],
+      "description": "George Benson smooth jazz clean — bright Polytone-style clean tone with light compression, no other effects, very light room. Sounds clean enough to record direct.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 50, "middle": 55, "treble": 55, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 45, "knob2": 50, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 15},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "nile-rodgers-disco-funk",
+      "aliases": ["nile rodgers", "chic disco", "disco funk rhythm", "tight funk strat"],
+      "tags": ["funk", "disco", "rhythm", "1970s", "strat"],
+      "description": "Nile Rodgers tight Strat funk — bright clean tone with HEAVY compression for the percussive 'chuck'. No drive, no modulation, almost no reverb. Compression IS the funk tone.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 40, "middle": 60, "treble": 70, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 80, "knob2": 75, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 15},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "frusciante-funk",
+      "aliases": ["frusciante funk", "rhcp funk rhythm", "chili peppers funk", "californication funk strat"],
+      "tags": ["funk", "alt-rock", "rhythm", "rhcp", "strat"],
+      "description": "John Frusciante's funky Strat rhythm — slight crunch on the amp, compression on hard, no other effects. Stratty quack with a touch of grit.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CRUNCH", "gain": 40, "bass": 45, "middle": 60, "treble": 65, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 70, "knob2": 65, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 20},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "stax-soul-rhythm",
+      "aliases": ["stax soul", "steve cropper", "memphis soul", "soul rhythm strat", "booker t mgs"],
+      "tags": ["soul", "rnb", "rhythm", "1960s", "vintage"],
+      "description": "Steve Cropper / Stax Records soul rhythm — clean Fender amp, light compression, no other effects. Dry, percussive, supportive — the guitar is the rhythm section.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 50, "middle": 65, "treble": 60, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 60, "knob2": 60, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 25},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "prince-clean-funk",
+      "aliases": ["prince clean", "prince funk", "purple rain rhythm", "minneapolis funk"],
+      "tags": ["funk", "rnb", "rhythm", "prince", "clean"],
+      "description": "Prince's percussive clean funk rhythm — bright clean amp, heavy compression, optional light chorus for shimmer, light reverb. Tight and intentional.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 45, "middle": 60, "treble": 70, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 75, "knob2": 70, "knob3": 65},
+        "mod": {"enabled": true, "type": "CHORUS", "knob1": 25, "knob2": 25, "knob3": 45},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 20},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "hillsong-pad-clean",
+      "aliases": ["hillsong", "worship pad clean", "modern worship rhythm", "ambient worship", "atmospheric clean church"],
+      "tags": ["worship", "ambient", "rhythm", "modern", "pad"],
+      "description": "Modern worship pad-style clean — clean preamp, long delay layered with hall reverb to create a pad-like wash. The guitar disappears into the mix and becomes texture.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 45, "middle": 50, "treble": 60, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 55, "knob2": 55, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "500-6000 ms", "time": 65, "feedback": 55, "e_level": 60},
+        "reverb": {"enabled": true, "type": "HALL", "level": 75},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "worship-lead-soaring",
+      "aliases": ["worship lead", "soaring worship lead", "lincoln brewster", "phil wickham lead", "modern worship solo"],
+      "tags": ["worship", "lead", "modern", "soaring"],
+      "description": "Modern worship soaring lead — moderately driven amp, plenty of compression for sustain, long delay and hall reverb for size. Anthemic, never aggressive.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "LEAD", "gain": 55, "bass": 50, "middle": 60, "treble": 65, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 60, "knob2": 55, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 60, "feedback": 40, "e_level": 50},
+        "reverb": {"enabled": true, "type": "HALL", "level": 55},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "acoustic-fingerstyle-clean",
+      "aliases": ["acoustic fingerstyle", "fingerstyle clean", "acoustic simulator", "unplugged feel"],
+      "tags": ["acoustic", "fingerstyle", "clean", "ac-sim"],
+      "description": "Approximation of an acoustic fingerstyle tone using the AC preamp — flat EQ, slight compression for note balance, light room. Use the ME-80's AC preamp here, not CLEAN.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "AC", "gain": 35, "bass": 50, "middle": 55, "treble": 65, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 55, "knob2": 55, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 30},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "chord-arpeggio-ambient",
+      "aliases": ["arpeggio clean", "ambient chord clean", "bright chord ambient", "shimmer clean"],
+      "tags": ["clean", "ambient", "rhythm", "shimmer"],
+      "description": "Bright arpeggiated clean for ambient or worship intros — clean preamp with treble pushed, light chorus for shimmer, moderate delay, big hall reverb. Cleaner than shoegaze, less effected than post-rock.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 45, "middle": 50, "treble": 65, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 55, "knob2": 55, "knob3": 60},
+        "mod": {"enabled": true, "type": "CHORUS", "knob1": 35, "knob2": 40, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 50, "feedback": 40, "e_level": 45},
+        "reverb": {"enabled": true, "type": "HALL", "level": 60},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "dick-dale-misirlou",
+      "aliases": ["dick dale", "misirlou", "king of surf", "fast surf instrumental", "reverb drenched lead"],
+      "tags": ["surf", "instrumental", "lead", "1960s", "spring-reverb"],
+      "description": "Dick Dale's fast tremolo-picked surf lead — clean Fender amp, drenched in spring reverb, no other effects. The reverb is half the sound.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 50, "middle": 50, "treble": 70, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "SPRING", "level": 80},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "ventures-walk-dont-run",
+      "aliases": ["the ventures", "walk dont run", "60s instrumental", "classic surf rhythm"],
+      "tags": ["surf", "instrumental", "1960s", "rhythm", "vintage"],
+      "description": "The Ventures classic 60s instrumental rhythm — clean Fender, gentle tremolo from MOD, spring reverb at a reasonable level. Sounds like sunshine through a car radio.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 50, "middle": 55, "treble": 65, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": true, "type": "TREMOLO", "knob1": 50, "knob2": 55, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "SPRING", "level": 55},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "satriani-surfing",
+      "aliases": ["joe satriani", "surfing with the alien", "instrumental rock lead", "satch lead"],
+      "tags": ["instrumental-rock", "lead", "1980s", "shred"],
+      "description": "Joe Satriani's melodic instrumental lead — moderate gain, mid-forward, light delay, generous hall reverb. Singing sustain without going metal.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "LEAD", "gain": 60, "bass": 50, "middle": 65, "treble": 60, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 55, "feedback": 35, "e_level": 40},
+        "reverb": {"enabled": true, "type": "HALL", "level": 55},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "vai-passion-warfare",
+      "aliases": ["steve vai", "passion and warfare", "high gain instrumental shred", "vai lead"],
+      "tags": ["instrumental-rock", "shred", "lead", "1990s"],
+      "description": "Steve Vai's high-gain virtuoso instrumental lead — push the gain higher than Satch, brighter, longer delay tails, more reverb. Designed to sing across 8-bar phrases.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "LEAD", "gain": 75, "bass": 50, "middle": 55, "treble": 70, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 65, "feedback": 45, "e_level": 50},
+        "reverb": {"enabled": true, "type": "HALL", "level": 65},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "country-fallback",
+      "aliases": ["country tone", "country style", "country rhythm", "country lead", "country twang", "telecaster clean country", "country guitar"],
+      "tags": ["country", "fallback", "generic"],
+      "description": "Generic country-style fallback when no specific song/artist matches. Bright clean tone with strong compression and short slap-back — covers the broad country territory.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 35, "bass": 45, "middle": 60, "treble": 75, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 70, "knob2": 60, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 25, "feedback": 15, "e_level": 30},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 30},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "jazz-fallback",
+      "aliases": ["jazz tone", "jazz clean", "jazz rhythm", "jazz lead", "jazz fusion", "warm jazz tone", "hollow body jazz", "jazz guitar"],
+      "tags": ["jazz", "fallback", "generic", "warm"],
+      "description": "Generic warm jazz fallback — clean preamp with treble rolled back, light compression, no effects except a touch of room. Woody, intimate, dark.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 55, "middle": 60, "treble": 40, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 25},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "funk-fallback",
+      "aliases": ["funk tone", "funk rhythm", "funk lead", "funky clean", "funky rhythm", "compressed funk", "funk guitar"],
+      "tags": ["funk", "fallback", "generic"],
+      "description": "Generic funk fallback — bright clean tone with HEAVY compression, no drive, almost no reverb. The compressor IS the funk sound.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 40, "middle": 60, "treble": 70, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 78, "knob2": 72, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 15},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "worship-fallback",
+      "aliases": ["worship tone", "worship rhythm", "worship lead", "modern worship", "ambient worship clean", "church guitar"],
+      "tags": ["worship", "ambient", "fallback", "generic"],
+      "description": "Generic modern worship fallback — clean preamp, light compression, generous delay and hall reverb stacked for pad-like ambience.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 45, "middle": 55, "treble": 60, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 55, "knob2": 55, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 60, "feedback": 50, "e_level": 55},
+        "reverb": {"enabled": true, "type": "HALL", "level": 65},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "ambient-swell-fallback",
+      "aliases": ["ambient swell", "ambient volume swell", "ambient clean swell", "atmospheric clean lead"],
+      "tags": ["ambient", "fallback", "generic", "volume-swell"],
+      "description": "Generic ambient volume-swell fallback — clean preamp, comp for even volume, long delay and big hall reverb for the wash. Use a volume pedal or fingers to swell into chords.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 50, "middle": 55, "treble": 60, "level": 75},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 60, "knob2": 60, "knob3": 65},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "500-6000 ms", "time": 70, "feedback": 60, "e_level": 60},
+        "reverb": {"enabled": true, "type": "HALL", "level": 80},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
     }
   ]
 }
