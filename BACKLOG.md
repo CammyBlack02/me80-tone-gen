@@ -8,29 +8,71 @@ Promote an entry to a GitHub issue once it's concrete enough that the issue body
 
 ## Boss Katana MkII support
 
-**Status:** investigation needed
-**Why here, not as an issue:** scope is unknown until we see Katana's patch file format. Also contingent — only matters if a Katana-owning user is actually going to use it.
+**Status:** ready to promote to issue, contingent on friend's actual demand
+**Investigation done:** 2026-06-27
 
 **Why it's interesting:**
 - Author's friend has a Katana MkII, no ME-80. Building this would let the tool serve both.
-- Same ecosystem (BOSS / BOSS TONE STUDIO), likely similar workflow (export `.tsl`-ish file → import into the Katana app → push to amp).
+- Same ecosystem (BOSS / BOSS TONE STUDIO), similar workflow (export `.tsl` → import into Boss Tone Studio for Katana → push to amp).
 
-**What we don't know yet:**
-- The Katana exports patches via BOSS TONE STUDIO for Katana (different app from the ME-80 one). Patch file extension? Same `.tsl` or different?
-- JSON shape — same top-level / params split, or different schema?
-- Amp / effect enum set — almost certainly different. Katana has its own 5 amp characters with variations, different effect categories, more parameters per effect.
+### Investigation findings
 
-**30-minute investigation to do before promoting to an issue:**
-1. Find a sample exported Katana patch file (community parsers / GitHub / a Katana owner)
-2. Skim the file format — is it JSON? Is it readable? Is there a community parser?
-3. Estimate how much of our existing code transfers vs. needs a separate writer
+**Format:** Yes, also `.tsl`, also JSON. Parses with `json.load(f)`. But the schema is **substantially different** from ME-80's — this is not a small extension, it's a parallel implementation.
 
-**If the investigation says "go":**
-- This becomes a refactor + new-writer project. Factor out the device-specific code (schema, enums, defaults, writer) so the LLM layer, recipe matcher, CLI, and web UI route to either device. Probably 2–3 sessions of work.
-- Will also need a Katana-specific recipe set (the recipes are amp-palette-aware; ME-80's recipes don't transfer).
+| | ME-80 | Katana MkII |
+|---|---|---|
+| Top-level shape | `{device, patchList, liveSetData, version}` | `{name, formatRev, device, data}` (data is a nested list-of-lists) |
+| Patch shape | `{params: {82 flat keys}, orderNumber, id, name, ...}` | `{memo, paramSet: {22 keys}}` |
+| Value encoding | Decimal strings (`"50"`) | **Hex byte strings (`"4B"`)** — arrays of bytes per param |
+| Patch name | `name1..name16` (decimal ASCII codes) | `UserPatch%PatchName` array of hex ASCII codes |
+| Amp palette | 9 types | 28 ("sneaky amp") types |
+| Effect structure | 8 fixed blocks in fixed signal chain | Multi-block per category: `Fx(1)`, `Fx(2)`, `Delay(1)`, `Delay(2)`, `Contour(1)`, `Contour(2)`, plus three `Patch_N` packed blocks |
+| Assignment matrices | Single `ctl_target` bitmap | Per-knob, per-expression-pedal, per-footswitch (`KnobAsgn`, `ExpPedalAsgn`, `GafcExp1Asgn`, `FsAsgn`) |
 
-**If the investigation says "skip":**
-- Note here why, move on. Door stays open if his friend gets vocal about wanting it.
+**Reference implementations found:**
+- [`mathieu-lemay/katana-tsl-parser`](https://github.com/mathieu-lemay/katana-tsl-parser) — Python read/write library for Katana TSL. **No LICENSE** (same trap as `johnsrude/BossToneStudio` — can't redistribute their `default.tsl`, but the format is reverse-engineerable from a personally-exported file).
+- [`leon3110l/katana_tsl_patch`](https://github.com/leon3110l/katana_tsl_patch) — older, author admits "code isn't great."
+- [`leon3110l/rs2tsl`](https://github.com/leon3110l/rs2tsl) — Rocksmith → Katana TSL converter. Precedent for tone-text → Katana TSL pipelines.
+- [`mathieu-lemay/katana-mk2-patches`](https://github.com/mathieu-lemay/katana-mk2-patches) — sample patches in the wild.
+- Format documentation: [mylespaul.com forum thread on the 28 sneaky amp types](https://www.mylespaul.com/threads/boss-katanas-28-sneaky-amp-types.392118/) cited by the parser.
+
+**Adjacent project:** [`ArthurVaiselbuh/KatanaToneStream`](https://github.com/ArthurVaiselbuh/KatanaToneStream) — **MIT licensed**, created the same day as our project (2026-06-27), description "Push tones directly to the katana mk2 by song / artist name." Literally the same concept, parallel implementation. Worth watching / considering collaboration vs. independent development.
+
+### What building Katana support actually requires
+
+It's a real project, not a flag. To do it well:
+
+1. **Refactor the core to be device-pluggable** (~1.5 sessions):
+   - Introduce a `Device` abstraction with `enums`, `schema`, `defaults`, `writer`, `renderer` methods
+   - Existing ME-80 implementation becomes the first concrete device
+   - LLM layer, recipe matcher, CLI, and web UI become device-agnostic
+   - Tests get a device fixture
+2. **Build Katana device implementation** (~1.5 sessions):
+   - `katana_enums.py` — 28 amp types + Katana FX/Delay/Contour categories
+   - `katana_schema.py` — multi-FX, multi-Delay, packed-Patch_N shape
+   - `katana_writer.py` — hex-byte-array encoding, nested `data[[]]` envelope
+   - `katana_defaults.py` — full default `paramSet` template
+   - `katana_renderer.py` — display (Katana's chain is non-linear, harder to render than ME-80's)
+3. **Curate Katana-specific recipes** (~0.5–1 session):
+   - ME-80 recipes don't transfer (different amp palette, different effect parameters)
+   - Smaller initial set acceptable (~10–15 recipes) since the friend isn't running 200 songs
+4. **CLI / web device selection** (~0.5 session):
+   - `tone-gen --device katana "..."`, web UI device picker
+   - Recipe matcher routes to device-specific recipe book
+
+**Total: 4–4.5 sessions of focused work.**
+
+### Decision point
+
+Promote to an issue when:
+- The friend confirms they would actually use it (not "would be cool" — "I'll load my pedal with patches from this"), AND
+- Author is willing to commit 4+ sessions to it
+
+Skip if:
+- Friend's interest is theoretical, OR
+- The MIT-licensed `KatanaToneStream` project ships first and serves the need
+
+Door stays open either way; this investigation makes the issue ready to write the day the demand is real.
 
 ---
 
