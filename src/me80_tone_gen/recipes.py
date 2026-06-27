@@ -50,9 +50,8 @@ class Recipe(BaseModel):
     aliases: list[str] = Field(min_length=1)
     description: str
     patch: RecipePatch
-    # Default "untested" — only flip to "tested" after the author has ear-tested
-    # the recipe through the actual pedal. See CLAUDE.md anti-patterns: untested
-    # Claude-seeded values are fine as seeds, not as verified curated values.
+    # Curated values seeded by Claude default to "untested" until ear-verified
+    # through the pedal — see CLAUDE.md anti-patterns.
     confidence: Literal["tested", "untested"] = "untested"
     tags: list[str] = Field(default_factory=list)
 

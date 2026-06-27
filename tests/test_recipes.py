@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
-from me80_tone_gen.recipes import Recipe, load_recipes, match_recipe
+from me80_tone_gen.recipes import Recipe, RecipeBook, load_recipes, match_recipe
 
 
 @pytest.fixture(scope="module")
@@ -54,22 +55,10 @@ def test_matcher_is_case_insensitive(recipes: list[Recipe]) -> None:
 
 def test_matcher_prefers_more_specific_alias_on_tie() -> None:
     """When two recipes match, the one with the longer matching alias wins."""
-    # Construct a synthetic recipe book where two recipes match but one alias
-    # is more specific than the other.
-    from me80_tone_gen.recipes import RecipeBook
-
-    short = Recipe.model_validate({
-        "id": "short-match",
-        "aliases": ["rock"],
-        "description": "n/a",
-        "patch": _minimal_patch(),
-    })
-    long = Recipe.model_validate({
-        "id": "specific-match",
-        "aliases": ["classic hard rock rhythm"],
-        "description": "n/a",
-        "patch": _minimal_patch(),
-    })
+    short = Recipe.model_validate(_minimal_recipe(id="short-match", aliases=["rock"]))
+    long = Recipe.model_validate(
+        _minimal_recipe(id="specific-match", aliases=["classic hard rock rhythm"])
+    )
     book = RecipeBook(recipes=[short, long]).recipes
 
     r = match_recipe("classic hard rock rhythm tone", book)
@@ -100,76 +89,24 @@ def test_recipe_patches_use_valid_knob_range(recipes: list[Recipe]) -> None:
 # ---------- confidence + tags schema fields ----------
 
 
-def test_confidence_defaults_to_untested() -> None:
-    r = Recipe.model_validate({
-        "id": "x",
-        "aliases": ["x"],
-        "description": "x",
-        "patch": _minimal_patch(),
-    })
-    assert r.confidence == "untested"
-
-
-def test_confidence_accepts_tested() -> None:
-    r = Recipe.model_validate({
-        "id": "x",
-        "aliases": ["x"],
-        "description": "x",
-        "patch": _minimal_patch(),
-        "confidence": "tested",
-    })
-    assert r.confidence == "tested"
+@pytest.mark.parametrize(
+    "override,field,expected",
+    [
+        ({}, "confidence", "untested"),
+        ({"confidence": "tested"}, "confidence", "tested"),
+        ({}, "tags", []),
+        ({"tags": ["metal", "1980s", "lead"]}, "tags", ["metal", "1980s", "lead"]),
+    ],
+)
+def test_recipe_optional_field_default_or_override(override: dict, field: str, expected: object) -> None:
+    r = Recipe.model_validate(_minimal_recipe(**override))
+    assert getattr(r, field) == expected
 
 
 def test_confidence_rejects_other_values() -> None:
     """Only 'tested' / 'untested' allowed — protects against typos like 'verified'."""
-    from pydantic import ValidationError
-
     with pytest.raises(ValidationError):
-        Recipe.model_validate({
-            "id": "x",
-            "aliases": ["x"],
-            "description": "x",
-            "patch": _minimal_patch(),
-            "confidence": "verified",
-        })
-
-
-def test_tags_default_to_empty_list() -> None:
-    r = Recipe.model_validate({
-        "id": "x",
-        "aliases": ["x"],
-        "description": "x",
-        "patch": _minimal_patch(),
-    })
-    assert r.tags == []
-
-
-def test_tags_accept_list_of_strings() -> None:
-    r = Recipe.model_validate({
-        "id": "x",
-        "aliases": ["x"],
-        "description": "x",
-        "patch": _minimal_patch(),
-        "tags": ["metal", "1980s", "lead"],
-    })
-    assert r.tags == ["metal", "1980s", "lead"]
-
-
-def test_packaged_recipes_have_legal_confidence_values(recipes: list[Recipe]) -> None:
-    """All loaded recipes must have a legal confidence value (Literal guard).
-
-    The Literal["tested","untested"] field rejects typos at load time, so this
-    is really just a sanity sweep — if it ever fails, something deeper is broken.
-
-    Note: we deliberately do NOT assert tested-count==0. The author flips
-    individual recipes to "tested" as they ear-test them; pinning a count would
-    force a test edit on every flip and discourage the direct-to-main workflow
-    for that lightweight kind of update.
-    """
-    legal = {"tested", "untested"}
-    bad = [r for r in recipes if r.confidence not in legal]
-    assert not bad, f"recipes with illegal confidence values: {[r.id for r in bad]}"
+        Recipe.model_validate(_minimal_recipe(confidence="verified"))
 
 
 def test_packaged_recipe_tags_survive_round_trip(recipes: list[Recipe]) -> None:
@@ -185,7 +122,7 @@ def test_packaged_recipe_tags_survive_round_trip(recipes: list[Recipe]) -> None:
     )
 
 
-# --- helper ---
+# --- helpers ---
 
 def _minimal_patch() -> dict:
     return {
@@ -198,3 +135,10 @@ def _minimal_patch() -> dict:
         "reverb": {"enabled": False, "type": "ROOM", "level": 50},
         "pedal_fx": {"enabled": False, "type": "WAH"},
     }
+
+
+def _minimal_recipe(**overrides: object) -> dict:
+    """Build a minimal valid Recipe payload, with any field optionally overridden."""
+    base = {"id": "x", "aliases": ["x"], "description": "x", "patch": _minimal_patch()}
+    base.update(overrides)
+    return base
