@@ -132,8 +132,8 @@ def test_token_is_refreshed_after_expiry() -> None:
     call_count = {"n": 0}
 
     def fake_urlopen(*args, **kwargs):
-        # Context-manager dunders must live on the type, not the instance,
-        # for Python 3.11+ to honor the `with` protocol.
+        # Context-manager dunders must live on the type, not the instance — CPython
+        # looks them up via the type slot and ignores instance attributes.
         idx = call_count["n"]
         call_count["n"] += 1
         Ctx = type(
@@ -182,3 +182,113 @@ def test_get_translates_http_errors() -> None:
         with pytest.raises(SpotifyError) as exc_info:
             client._get("/audio-features/missing")
         assert not isinstance(exc_info.value, (SpotifyAuthError, SpotifyNotFoundError))
+
+
+from pathlib import Path
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _seeded_client() -> SpotifyClient:
+    client = SpotifyClient(client_id="id", client_secret="secret")
+    client._token = "abc"
+    client._token_expires_at = time.time() + 3600
+    return client
+
+
+def _mock_urlopen_sequence(*payload_paths: str):
+    """Returns a side_effect that returns each fixture in turn."""
+    payloads = [_json.loads((FIXTURES / p).read_text()) for p in payload_paths]
+    idx = {"n": 0}
+
+    def factory(*args, **kwargs):
+        payload = payloads[idx["n"]]
+        idx["n"] += 1
+        Ctx = type(
+            "Ctx",
+            (),
+            {
+                "__enter__": lambda self_: _http_response(payload),
+                "__exit__": lambda self_, *exc: False,
+            },
+        )
+        return Ctx()
+    return factory
+
+
+def test_features_from_url_returns_features_and_info() -> None:
+    client = _seeded_client()
+    with patch(
+        "me80_tone_gen.spotify.urllib.request.urlopen",
+        side_effect=_mock_urlopen_sequence("spotify_audio_features.json", "spotify_track.json"),
+    ):
+        features, info = client.features_from_url(
+            "https://open.spotify.com/track/3n3Ppam7vgaVa1iaRUc9Lp"
+        )
+
+    assert features.tempo == pytest.approx(140.012)
+    assert features.energy == pytest.approx(0.918)
+    assert features.key == 9
+    assert features.mode == 0
+    assert info.id == "3n3Ppam7vgaVa1iaRUc9Lp"
+    assert info.name == "Sample Track"
+    assert info.artist == "First Artist, Second Artist"
+
+
+def test_features_from_query_uses_top_search_result() -> None:
+    client = _seeded_client()
+    with patch(
+        "me80_tone_gen.spotify.urllib.request.urlopen",
+        side_effect=_mock_urlopen_sequence("spotify_search.json", "spotify_audio_features.json"),
+    ):
+        features, info = client.features_from_query("Sample Track First Artist")
+    assert info.name == "Sample Track"
+    assert features.energy == pytest.approx(0.918)
+
+
+def test_features_from_query_raises_on_empty_results() -> None:
+    client = _seeded_client()
+
+    def fake_urlopen(*args, **kwargs):
+        Ctx = type(
+            "Ctx",
+            (),
+            {
+                "__enter__": lambda self_: _http_response({"tracks": {"items": []}}),
+                "__exit__": lambda self_, *exc: False,
+            },
+        )
+        return Ctx()
+
+    with patch("me80_tone_gen.spotify.urllib.request.urlopen", side_effect=fake_urlopen):
+        with pytest.raises(SpotifyNotFoundError):
+            client.features_from_query("a track that does not exist")
+
+
+def test_format_features_for_prompt_contains_all_fields() -> None:
+    from me80_tone_gen.spotify import format_features_for_prompt
+
+    features = AudioFeatures(
+        tempo=140.012, energy=0.918, loudness=-4.213,
+        key=9, mode=0,
+        acousticness=0.014, instrumentalness=0.183, valence=0.337,
+    )
+    text = format_features_for_prompt(features)
+    assert "tempo: 140 bpm" in text
+    assert "energy: 0.92" in text
+    assert "A" in text                     # key label
+    assert "minor" in text
+    assert "very low — electric" in text   # acousticness=0.014 → low bucket
+    assert "neutral" in text               # valence=0.337 → mid bucket
+
+
+def test_format_features_qualitative_buckets() -> None:
+    """Sanity-check the thresholds: 0.7→high, 0.5→mid, 0.1→low."""
+    from me80_tone_gen.spotify import format_features_for_prompt
+
+    high = AudioFeatures(120, 0.7, -8, 0, 1, 0.7, 0.7, 0.7)
+    mid = AudioFeatures(120, 0.5, -8, 0, 1, 0.5, 0.5, 0.5)
+    low = AudioFeatures(120, 0.1, -8, 0, 1, 0.1, 0.1, 0.1)
+    assert "high" in format_features_for_prompt(high)
+    assert "mixed" in format_features_for_prompt(mid)
+    assert "very low — electric" in format_features_for_prompt(low)

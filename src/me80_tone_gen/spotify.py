@@ -140,3 +140,82 @@ class SpotifyClient:
                     f"Spotify API {exc.code} for {path} — credentials rejected"
                 ) from exc
             raise SpotifyError(f"Spotify API error {exc.code} for {path}") from exc
+
+    def features_from_url(self, track_url: str) -> tuple[AudioFeatures, TrackInfo]:
+        """Resolve a Spotify track URL/URI to its audio features and metadata."""
+        track_id = _parse_track_id(track_url)
+        features_payload = self._get(f"/audio-features/{track_id}")
+        track_payload = self._get(f"/tracks/{track_id}")
+        return _features_from_payload(features_payload), _track_from_payload(track_payload)
+
+    def features_from_query(self, query: str) -> tuple[AudioFeatures, TrackInfo]:
+        """Search Spotify for `query` and return features for the top result."""
+        search = self._get("/search", params={"q": query, "type": "track", "limit": "1"})
+        items = search.get("tracks", {}).get("items", [])
+        if not items:
+            raise SpotifyNotFoundError(f"no Spotify track found for query: {query!r}")
+        top = items[0]
+        features_payload = self._get(f"/audio-features/{top['id']}")
+        return _features_from_payload(features_payload), _track_from_payload(top)
+
+
+def _features_from_payload(payload: dict) -> AudioFeatures:
+    return AudioFeatures(
+        tempo=float(payload["tempo"]),
+        energy=float(payload["energy"]),
+        loudness=float(payload["loudness"]),
+        key=int(payload["key"]),
+        mode=int(payload["mode"]),
+        acousticness=float(payload["acousticness"]),
+        instrumentalness=float(payload["instrumentalness"]),
+        valence=float(payload["valence"]),
+    )
+
+
+def _track_from_payload(payload: dict) -> TrackInfo:
+    artists = ", ".join(a["name"] for a in payload.get("artists", []))
+    return TrackInfo(id=payload["id"], name=payload["name"], artist=artists)
+
+
+_KEY_NAMES = ["C", "C#/Db", "D", "D#/Eb", "E", "F", "F#/Gb",
+              "G", "G#/Ab", "A", "A#/Bb", "B"]
+
+
+def format_features_for_prompt(features: AudioFeatures) -> str:
+    """Human-readable block injected into the LLM user prompt."""
+    key_label = _KEY_NAMES[features.key] if 0 <= features.key < 12 else "unknown"
+    mode_label = "major" if features.mode == 1 else "minor"
+    return (
+        "Track audio features (real signal about the source song):\n"
+        f"- tempo: {features.tempo:.0f} bpm\n"
+        f"- energy: {features.energy:.2f} ({_qual(features.energy, 'high', 'medium', 'low')})\n"
+        f"- loudness: {features.loudness:.1f} dB\n"
+        f"- key: {key_label}, mode: {mode_label}\n"
+        f"- acousticness: {features.acousticness:.2f} "
+        f"({_qual(features.acousticness, 'high — acoustic', 'mixed', 'very low — electric')})\n"
+        f"- instrumentalness: {features.instrumentalness:.2f} "
+        f"({_qual(features.instrumentalness, 'instrumental', 'mixed', 'vocal-led')})\n"
+        f"- valence: {features.valence:.2f} "
+        f"({_qual(features.valence, 'bright', 'neutral', 'dark')})\n\n"
+        "Use these to adjust your choices. They are advisory, not overrides — the "
+        "description and recipe seed still drive type choices."
+    )
+
+
+def _qual(value: float, high: str, mid: str, low: str) -> str:
+    if value >= 0.66:
+        return high
+    if value >= 0.33:
+        return mid
+    return low
+
+
+def format_features_one_line(features: AudioFeatures) -> str:
+    """One-line summary suitable for CLI stderr output."""
+    return (
+        f"tempo={features.tempo:.0f} bpm  energy={features.energy:.2f}  "
+        f"loudness={features.loudness:.1f} dB  "
+        f"acousticness={features.acousticness:.2f}  "
+        f"instrumentalness={features.instrumentalness:.2f}  "
+        f"valence={features.valence:.2f}"
+    )

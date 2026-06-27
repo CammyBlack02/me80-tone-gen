@@ -1,0 +1,18 @@
+{
+  "danceability": 0.421,
+  "energy": 0.918,
+  "key": 9,
+  "loudness": -4.213,
+  "mode": 0,
+  "speechiness": 0.052,
+  "acousticness": 0.014,
+  "instrumentalness": 0.183,
+  "liveness": 0.221,
+  "valence": 0.337,
+  "tempo": 140.012,
+  "type": "audio_features",
+  "id": "3n3Ppam7vgaVa1iaRUc9Lp",
+  "uri": "spotify:track:3n3Ppam7vgaVa1iaRUc9Lp",
+  "duration_ms": 215000,
+  "time_signature": 4
+}
