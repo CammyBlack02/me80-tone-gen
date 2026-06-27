@@ -69,3 +69,21 @@ def test_spotify_auth_error_exits_1(capsys, monkeypatch) -> None:
     rc = cli.main(["warm bluesy lead", "--spotify-track", "https://open.spotify.com/track/abc"])
     assert rc == 1
     assert "creds missing" in capsys.readouterr().err
+
+
+def test_spotify_not_called_when_description_missing(monkeypatch, capsys) -> None:
+    """Description must be validated before any Spotify network round-trips."""
+    spotify_called = {"n": 0}
+
+    def boom():
+        spotify_called["n"] += 1
+        raise AssertionError("SpotifyClient should not be instantiated")
+
+    monkeypatch.setattr(cli, "SpotifyClient", boom)
+    monkeypatch.setattr(cli, "load_recipes", lambda p=None: [])
+    # Simulate no stdin and no positional argument.
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+
+    with pytest.raises(SystemExit):
+        cli.main(["--spotify-track", "https://open.spotify.com/track/abc"])
+    assert spotify_called["n"] == 0

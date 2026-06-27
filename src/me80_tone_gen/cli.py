@@ -137,6 +137,12 @@ def main(argv: list[str] | None = None) -> int:
 
     recipes = [] if args.no_recipes else load_recipes(args.recipes)
 
+    # Resolve the description before any Spotify call so a missing-input usage
+    # error fires before we burn network round-trips on the API.
+    description = None
+    if not args.batch:
+        description = _read_description(args)
+
     audio_features = None
     if args.spotify_track or args.spotify_song:
         try:
@@ -157,7 +163,6 @@ def main(argv: list[str] | None = None) -> int:
             descriptions = _read_batch(args.batch)
             results = [_generate_one(d, args, recipes) for d in descriptions]
         else:
-            description = _read_description(args)
             results = [_generate_one(description, args, recipes, audio_features)]
     except GenerationError as exc:
         print(f"error: {exc}", file=sys.stderr)
