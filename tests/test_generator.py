@@ -101,46 +101,49 @@ def test_temperature_and_model_propagate() -> None:
 
 # ---------- system prompt structure ----------
 #
-# The SYSTEM_PROMPT contains few-shot examples teaching the model the *pattern*
-# of which blocks belong on/off per genre. These tests guard the structure
-# against accidental drift in refactors. They don't test the model's behavior
-# (that's a manual smoke).
+# These tests guard against refactor-drift in the few-shot examples — not
+# the model's runtime behaviour (that's a manual smoke).
 
 
-def test_system_prompt_contains_each_reference_genre() -> None:
-    """Each of the 6 reference genres must appear by name in the prompt."""
-    expected_genres = ["djent", "country", "shoegaze", "post-rock", "funk", "stoner"]
-    lowered = SYSTEM_PROMPT.lower()
-    missing = [g for g in expected_genres if g not in lowered]
-    assert not missing, f"missing reference genres: {missing}"
+@pytest.mark.parametrize(
+    "label,required,case_insensitive",
+    [
+        # Six reference genres must appear by name so the few-shot block
+        # actually covers the territory we claim it does.
+        ("reference genres",
+         ["djent", "country", "shoegaze", "post-rock", "funk", "stoner"],
+         True),
+        # Preamp diversity — at least METAL, CLEAN, LEAD, STACK so the model
+        # sees four distinct example shapes, not one repeated.
+        ("preamp diversity",
+         ["METAL", "CLEAN", "LEAD", "STACK"],
+         False),
+        # Supporting effects — T-SCREAM (djent-tightening), FUZZ (stoner),
+        # CHORUS (shoegaze) prove non-preamp choices are exemplified too.
+        ("supporting effects",
+         ["T-SCREAM", "FUZZ", "CHORUS"],
+         False),
+    ],
+)
+def test_system_prompt_contains(label: str, required: list[str], case_insensitive: bool) -> None:
+    haystack = SYSTEM_PROMPT.lower() if case_insensitive else SYSTEM_PROMPT
+    needles = [s.lower() if case_insensitive else s for s in required]
+    missing = [n for n in needles if n not in haystack]
+    assert not missing, f"{label}: missing {missing}"
 
 
-def test_system_prompt_demonstrates_diverse_preamp_choices() -> None:
-    """Reference examples should cover distinct preamp types, not just one."""
-    # At minimum: METAL (djent), CLEAN (country/funk/post-rock), LEAD (shoegaze),
-    # STACK (stoner). Without these, the model has only one example shape to
-    # imitate.
-    for preamp_type in ("METAL", "CLEAN", "LEAD", "STACK"):
-        assert preamp_type in SYSTEM_PROMPT, f"prompt missing {preamp_type} example"
+def test_system_prompt_demonstrates_off_state_concretely() -> None:
+    """Each example must show multiple blocks in the off state.
 
-
-def test_system_prompt_demonstrates_supporting_effect_choices() -> None:
-    """Examples must show specific supporting-effect patterns, not just preamps."""
-    # T-SCREAM (the djent-tightening pattern) and FUZZ (stoner) are signature
-    # supporting effects in the reference set; CHORUS (shoegaze) covers MOD.
-    for effect in ("T-SCREAM", "FUZZ", "CHORUS"):
-        assert effect in SYSTEM_PROMPT, f"prompt missing {effect} example"
-
-
-def test_system_prompt_emphasises_what_blocks_to_leave_off() -> None:
-    """Defining-by-absence guidance must be present.
-
-    The biggest failure mode pre-few-shot was the model leaving important
-    effects off (djent missing T-SCREAM) or enabling irrelevant ones (djent
-    with delay). The prompt now teaches the off-state as actively as the on.
+    The biggest pre-few-shot failure mode was the model leaving important
+    blocks off (djent missing T-SCREAM) or enabling irrelevant ones (djent
+    with delay). Counting `: off` block-lines proves the examples *show*
+    off-state rather than only *describing* it — phrase-tolerant guard.
     """
-    lowered = SYSTEM_PROMPT.lower()
-    assert "off" in lowered
-    # Phrase-tolerant: the prompt must teach defining-by-absence, but allow
-    # benign copy-edits to the exact sentence.
-    assert "defined by what" in lowered
+    off_block_lines = SYSTEM_PROMPT.count(": off")
+    # 6 examples × at least ~3 off-blocks each is a generous floor; we
+    # currently emit 27.
+    assert off_block_lines >= 18, (
+        f"expected at least 18 ': off' block lines in the few-shot examples, "
+        f"got {off_block_lines}"
+    )
