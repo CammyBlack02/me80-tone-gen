@@ -16,6 +16,11 @@ from .generator import DEFAULT_MODEL, DEFAULT_TEMPERATURE, GenerationError
 from .recipes import Recipe, load_recipes, match_recipe
 from .renderer import render_knob_list
 from .schema import SemanticPatch
+from .spotify import (
+    SpotifyClient,
+    SpotifyError,
+    format_features_one_line,
+)
 from .writer import build_liveset, liveset_to_json, write_tsl
 
 
@@ -42,6 +47,7 @@ def _generate_one(
     description: str,
     args: argparse.Namespace,
     recipes: list[Recipe],
+    audio_features=None,
 ) -> tuple[SemanticPatch, Recipe | None]:
     recipe = None if args.no_recipes else match_recipe(description, recipes)
     seed = recipe.model_dump(exclude={"aliases"}) if recipe else None
@@ -51,6 +57,7 @@ def _generate_one(
         temperature=args.temp,
         retries=args.retries,
         recipe_seed=seed,
+        audio_features=audio_features,
     )
     return patch, recipe
 
@@ -110,10 +117,40 @@ def main(argv: list[str] | None = None) -> int:
         "--no-recipes", action="store_true",
         help="Disable recipe matching; rely purely on model knowledge.",
     )
+    spotify_group = parser.add_mutually_exclusive_group()
+    spotify_group.add_argument(
+        "--spotify-track",
+        help="Spotify track URL or URI; its audio features are injected into the prompt.",
+    )
+    spotify_group.add_argument(
+        "--spotify-song",
+        help="Free-text song query; the top Spotify search match's features are used.",
+    )
 
     args = parser.parse_args(argv)
 
+    if args.batch and (args.spotify_track or args.spotify_song):
+        parser.error(
+            "--spotify-track / --spotify-song cannot be combined with --batch; "
+            "per-track playlist support is tracked separately."
+        )
+
     recipes = [] if args.no_recipes else load_recipes(args.recipes)
+
+    audio_features = None
+    if args.spotify_track or args.spotify_song:
+        try:
+            client = SpotifyClient()
+            if args.spotify_track:
+                audio_features, info = client.features_from_url(args.spotify_track)
+            else:
+                audio_features, info = client.features_from_query(args.spotify_song)
+        except SpotifyError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        track_label = f"{info.name} — {info.artist}"
+        print(f"Spotify track: {track_label}", file=sys.stderr)
+        print(f"  {format_features_one_line(audio_features)}", file=sys.stderr)
 
     try:
         if args.batch:
@@ -121,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
             results = [_generate_one(d, args, recipes) for d in descriptions]
         else:
             description = _read_description(args)
-            results = [_generate_one(description, args, recipes)]
+            results = [_generate_one(description, args, recipes, audio_features)]
     except GenerationError as exc:
         print(f"error: {exc}", file=sys.stderr)
         if exc.last_error:
