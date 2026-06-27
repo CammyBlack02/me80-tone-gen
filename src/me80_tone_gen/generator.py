@@ -73,10 +73,22 @@ class GenerationError(Exception):
 def _user_prompt(description: str, recipe_seed: dict | None) -> str:
     parts = [f"Tone description: {description}"]
     if recipe_seed:
+        # Curated recipe matched against the description — give the model a clear
+        # directive to anchor on it rather than guess from scratch.
+        recipe_id = recipe_seed.get("id", "unknown")
+        recipe_desc = recipe_seed.get("description", "")
+        patch = recipe_seed.get("patch", recipe_seed)
         parts.append(
-            "Known-good starting point for a similar tone (use as a seed, not gospel):"
+            f"A curated reference recipe matches this description (id: {recipe_id}).\n"
+            f"Notes: {recipe_desc}\n\n"
+            "Use this recipe's preamp type and effect-type choices as your anchor — "
+            "do not deviate from them unless the user's description explicitly "
+            "contradicts. Knob values below are starting points; you may adjust "
+            "them to fit any extra detail in the description (e.g. 'more reverb', "
+            "'tighter low end').\n\n"
+            "Reference recipe patch settings:"
         )
-        parts.append(json.dumps(recipe_seed, indent=2))
+        parts.append(json.dumps(patch, indent=2))
     return "\n\n".join(parts)
 
 

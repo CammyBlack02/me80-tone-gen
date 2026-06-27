@@ -13,6 +13,7 @@ from pathlib import Path
 
 from . import generator
 from .generator import DEFAULT_MODEL, DEFAULT_TEMPERATURE, GenerationError
+from .recipes import Recipe, load_recipes, match_recipe
 from .renderer import render_knob_list
 from .schema import SemanticPatch
 from .writer import build_liveset, liveset_to_json, write_tsl
@@ -37,13 +38,21 @@ def _read_batch(path: Path) -> list[str]:
     return lines
 
 
-def _generate_one(description: str, args: argparse.Namespace) -> SemanticPatch:
-    return generator.generate_patch(
+def _generate_one(
+    description: str,
+    args: argparse.Namespace,
+    recipes: list[Recipe],
+) -> tuple[SemanticPatch, Recipe | None]:
+    recipe = None if args.no_recipes else match_recipe(description, recipes)
+    seed = recipe.model_dump(exclude={"aliases"}) if recipe else None
+    patch = generator.generate_patch(
         description,
         model=args.model,
         temperature=args.temp,
         retries=args.retries,
+        recipe_seed=seed,
     )
+    return patch, recipe
 
 
 def _liveset_name_from(args: argparse.Namespace) -> str:
@@ -93,21 +102,34 @@ def main(argv: list[str] | None = None) -> int:
         "--retries", type=int, default=2,
         help="Max retries on invalid LLM output (default: 2).",
     )
+    parser.add_argument(
+        "--recipes", type=Path, default=None,
+        help="Path to a custom recipes.json (default: packaged starter set).",
+    )
+    parser.add_argument(
+        "--no-recipes", action="store_true",
+        help="Disable recipe matching; rely purely on model knowledge.",
+    )
 
     args = parser.parse_args(argv)
+
+    recipes = [] if args.no_recipes else load_recipes(args.recipes)
 
     try:
         if args.batch:
             descriptions = _read_batch(args.batch)
-            patches = [_generate_one(d, args) for d in descriptions]
+            results = [_generate_one(d, args, recipes) for d in descriptions]
         else:
             description = _read_description(args)
-            patches = [_generate_one(description, args)]
+            results = [_generate_one(description, args, recipes)]
     except GenerationError as exc:
         print(f"error: {exc}", file=sys.stderr)
         if exc.last_error:
             print(f"  last validation error: {exc.last_error}", file=sys.stderr)
         return 1
+
+    patches = [r[0] for r in results]
+    matched = [r[1] for r in results]
 
     liveset_name = _liveset_name_from(args)
 
@@ -123,7 +145,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Human-readable: render each patch's knob list paired with its rationale.
     liveset = build_liveset(patches, liveset_name)
-    for semantic, patch in zip(patches, liveset["patchList"], strict=True):
+    for semantic, patch, recipe in zip(patches, liveset["patchList"], matched, strict=True):
+        if recipe:
+            print(f"  Recipe matched: {recipe.id}")
         print(render_knob_list(patch))
         if semantic.rationale:
             print(f"  Rationale: {semantic.rationale}")

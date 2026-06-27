@@ -1,0 +1,184 @@
+{
+  "recipes": [
+    {
+      "id": "master-of-puppets-rhythm",
+      "aliases": [
+        "master of puppets",
+        "puppets rhythm",
+        "metallica metal rhythm",
+        "thrash metal rhythm",
+        "scooped metal rhythm",
+        "mesa mark high gain"
+      ],
+      "description": "Scooped-mid Mesa Mark IIC+ style high-gain rhythm tone with a Tube Screamer in front to tighten the low end. The TS is set low-drive / high-tone — it acts as a clean boost, not a distortion source.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "METAL", "gain": 70, "bass": 65, "middle": 30, "treble": 70, "level": 65},
+        "od_ds": {"enabled": true, "type": "T-SCREAM", "drive": 30, "tone": 70, "level": 60},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 20},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "ac-dc-rhythm",
+      "aliases": [
+        "ac/dc",
+        "ac dc",
+        "highway to hell",
+        "back in black",
+        "marshall plexi rock rhythm",
+        "classic hard rock rhythm",
+        "angus young rhythm"
+      ],
+      "description": "Marshall Plexi-style mid-gain rock rhythm. No pedals — the gain comes from the amp. Forward mids (Marshall signature), present but not bright treble, no modulation or delay.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "STACK", "gain": 55, "bass": 50, "middle": 65, "treble": 60, "level": 65},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 15},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "srv-texas-blues",
+      "aliases": [
+        "stevie ray vaughan",
+        "srv",
+        "texas flood",
+        "pride and joy",
+        "texas blues",
+        "fender tweed blues lead",
+        "vibroverb blues"
+      ],
+      "description": "Fender Tweed / Vibroverb-style blues with a Tube Screamer driving the front end. Mid-forward, fat bottom, light reverb. Lots of dynamics — the gain should clean up with the volume knob.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "TWEED", "gain": 60, "bass": 55, "middle": 65, "treble": 50, "level": 65},
+        "od_ds": {"enabled": true, "type": "T-SCREAM", "drive": 35, "tone": 50, "level": 55},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 25},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "comfortably-numb-solo",
+      "aliases": [
+        "comfortably numb",
+        "comfortably numb solo",
+        "gilmour solo",
+        "david gilmour lead",
+        "pink floyd solo",
+        "soaring lead with delay"
+      ],
+      "description": "Soaring sustaining lead in the Gilmour mold: moderately driven amp, long sustain, prominent quarter-note-ish delay (~400ms feel) with moderate feedback, and a lush hall reverb behind everything.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "LEAD", "gain": 55, "bass": 50, "middle": 60, "treble": 60, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 60, "knob2": 50, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 60, "feedback": 35, "e_level": 45},
+        "reverb": {"enabled": true, "type": "HALL", "level": 45},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "surf-rock",
+      "aliases": [
+        "surf rock",
+        "surf",
+        "wipeout",
+        "misirlou",
+        "dick dale",
+        "spaghetti western",
+        "spring and tremolo",
+        "vintage surf"
+      ],
+      "description": "Classic surf: bright Fender-style clean, drippy spring reverb, lush tremolo. No drive, no modulation other than tremolo. The reverb level should be obvious — surf is half guitar, half reverb.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 50, "middle": 55, "treble": 70, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": true, "type": "TREMOLO", "knob1": 55, "knob2": 65, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "SPRING", "level": 65},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "the-edge-ambient-delay",
+      "aliases": [
+        "the edge",
+        "u2",
+        "where the streets have no name",
+        "dotted eighth delay",
+        "rhythmic delay clean",
+        "ambient clean delay"
+      ],
+      "description": "Bright clean tone with a rhythmic dotted-eighth delay sitting prominently in the mix — the delay is part of the riff, not background flavor. Moderate hall reverb behind it. No drive.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 25, "bass": 45, "middle": 50, "treble": 65, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 55, "knob2": 55, "knob3": 60},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 55, "feedback": 30, "e_level": 55},
+        "reverb": {"enabled": true, "type": "HALL", "level": 35},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "hendrix-foxy-lady",
+      "aliases": [
+        "hendrix",
+        "jimi hendrix",
+        "foxy lady",
+        "purple haze",
+        "fuzz face",
+        "vintage fuzz rock"
+      ],
+      "description": "Marshall stack pushed into a vintage fuzz pedal. The fuzz does most of the saturation, the amp adds warmth. Mids forward, no modulation, dry-ish room. Lift the gain knob and it should clean up.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "STACK", "gain": 50, "bass": 50, "middle": 60, "treble": 55, "level": 60},
+        "od_ds": {"enabled": true, "type": "FUZZ", "drive": 60, "tone": 55, "level": 60},
+        "comp": {"enabled": false, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
+        "mod": {"enabled": false, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": false, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "reverb": {"enabled": true, "type": "ROOM", "level": 20},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    },
+    {
+      "id": "modern-clean-fingerstyle",
+      "aliases": [
+        "polyphia clean",
+        "mateus asato",
+        "tim henson clean",
+        "modern fingerstyle clean",
+        "lush modern clean",
+        "studio clean with chorus and delay"
+      ],
+      "description": "Modern studio clean: bright but not piercing, subtle chorus for movement, gentle short delay for size, hall reverb behind. The effects should be felt, not heard prominently.",
+      "patch": {
+        "preamp": {"enabled": true, "type": "CLEAN", "gain": 30, "bass": 50, "middle": 55, "treble": 65, "level": 70},
+        "od_ds": {"enabled": false, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
+        "comp": {"enabled": true, "type": "COMP", "knob1": 55, "knob2": 55, "knob3": 60},
+        "mod": {"enabled": true, "type": "CHORUS", "knob1": 35, "knob2": 40, "knob3": 50},
+        "eq_fx2": {"enabled": false, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
+        "delay": {"enabled": true, "type": "100-600 ms", "time": 35, "feedback": 20, "e_level": 30},
+        "reverb": {"enabled": true, "type": "HALL", "level": 40},
+        "pedal_fx": {"enabled": false, "type": "WAH"}
+      }
+    }
+  ]
+}
