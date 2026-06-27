@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from me80_tone_gen.generator import GenerationError, generate_patch
+from me80_tone_gen.generator import SYSTEM_PROMPT, GenerationError, generate_patch
 from me80_tone_gen.schema import SemanticPatch
 
 
@@ -97,3 +97,53 @@ def test_temperature_and_model_propagate() -> None:
     generate_patch("test", client=fake, model="llama3.1:8b", temperature=0.7, retries=0)
     assert fake.calls[0]["model"] == "llama3.1:8b"
     assert fake.calls[0]["options"]["temperature"] == 0.7
+
+
+# ---------- system prompt structure ----------
+#
+# These tests guard against refactor-drift in the few-shot examples — not
+# the model's runtime behaviour (that's a manual smoke).
+
+
+@pytest.mark.parametrize(
+    "label,required,case_insensitive",
+    [
+        # Six reference genres must appear by name so the few-shot block
+        # actually covers the territory we claim it does.
+        ("reference genres",
+         ["djent", "country", "shoegaze", "post-rock", "funk", "stoner"],
+         True),
+        # Preamp diversity — at least METAL, CLEAN, LEAD, STACK so the model
+        # sees four distinct example shapes, not one repeated.
+        ("preamp diversity",
+         ["METAL", "CLEAN", "LEAD", "STACK"],
+         False),
+        # Supporting effects — T-SCREAM (djent-tightening), FUZZ (stoner),
+        # CHORUS (shoegaze) prove non-preamp choices are exemplified too.
+        ("supporting effects",
+         ["T-SCREAM", "FUZZ", "CHORUS"],
+         False),
+    ],
+)
+def test_system_prompt_contains(label: str, required: list[str], case_insensitive: bool) -> None:
+    haystack = SYSTEM_PROMPT.lower() if case_insensitive else SYSTEM_PROMPT
+    needles = [s.lower() if case_insensitive else s for s in required]
+    missing = [n for n in needles if n not in haystack]
+    assert not missing, f"{label}: missing {missing}"
+
+
+def test_system_prompt_demonstrates_off_state_concretely() -> None:
+    """Each example must show multiple blocks in the off state.
+
+    The biggest pre-few-shot failure mode was the model leaving important
+    blocks off (djent missing T-SCREAM) or enabling irrelevant ones (djent
+    with delay). Counting `: off` block-lines proves the examples *show*
+    off-state rather than only *describing* it — phrase-tolerant guard.
+    """
+    off_block_lines = SYSTEM_PROMPT.count(": off")
+    # 6 examples × at least ~3 off-blocks each is a generous floor; we
+    # currently emit 27.
+    assert off_block_lines >= 18, (
+        f"expected at least 18 ': off' block lines in the few-shot examples, "
+        f"got {off_block_lines}"
+    )
