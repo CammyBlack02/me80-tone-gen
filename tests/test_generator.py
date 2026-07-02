@@ -221,3 +221,39 @@ def test_generate_variants_preserves_input_order() -> None:
     assert variants[0].patch_name == "LOW TEMP"
     assert variants[1].patch_name == "MID TEMP"
     assert variants[2].patch_name == "HIGH TEMP"
+
+
+def test_generate_variants_temperature_per_call() -> None:
+    """Each variant call gets its own temperature; all temperatures used exactly once."""
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="A"),
+        0.5: _valid_patch_json(patch_name="B"),
+        0.8: _valid_patch_json(patch_name="C"),
+    })
+    generate_variants("bluesy lead", n=3, client=fake, retries=0)
+    seen_temps = sorted(call["options"]["temperature"] for call in fake.calls)
+    assert seen_temps == [0.2, 0.5, 0.8]
+
+
+def test_generate_variants_explicit_temperatures() -> None:
+    """Explicit temperatures= override the default spacing."""
+    fake = ThreadSafeFakeOllama({
+        0.1: _valid_patch_json(patch_name="A"),
+        0.9: _valid_patch_json(patch_name="B"),
+    })
+    variants = generate_variants(
+        "bluesy lead", n=2, temperatures=[0.1, 0.9], client=fake, retries=0
+    )
+    assert len(variants) == 2
+    seen_temps = sorted(call["options"]["temperature"] for call in fake.calls)
+    assert seen_temps == [0.1, 0.9]
+
+
+def test_generate_variants_temperature_length_mismatch_raises() -> None:
+    """Explicit temperatures with wrong length raises before any Ollama call."""
+    fake = ThreadSafeFakeOllama({})
+    with pytest.raises(ValueError, match="does not match"):
+        generate_variants(
+            "bluesy lead", n=3, temperatures=[0.2, 0.5], client=fake, retries=0
+        )
+    assert fake.calls == []  # no calls made
