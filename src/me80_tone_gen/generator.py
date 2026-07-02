@@ -24,14 +24,15 @@ _VARIANT_TEMP_HI = 0.8
 
 
 def _evenly_spaced_temperatures(n: int) -> list[float]:
-    """N temperatures evenly spaced across [0.2, 0.8] inclusive.
+    """N temperatures for variant generation.
 
-    n=1 → [0.2] (lowest — the "confident" variant is the safest default).
+    n=1 → [DEFAULT_TEMPERATURE] (single variant means no diversity; use the
+    model's normal default). n>=2 → evenly spaced across [0.2, 0.8] inclusive.
     """
     if n < 1:
         raise ValueError(f"n must be >= 1, got {n}")
     if n == 1:
-        return [_VARIANT_TEMP_LO]
+        return [DEFAULT_TEMPERATURE]
     step = (_VARIANT_TEMP_HI - _VARIANT_TEMP_LO) / (n - 1)
     return [_VARIANT_TEMP_LO + i * step for i in range(n)]
 

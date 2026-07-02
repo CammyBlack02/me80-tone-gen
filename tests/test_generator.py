@@ -177,13 +177,13 @@ def test_system_prompt_demonstrates_off_state_concretely() -> None:
 
 # ---------- multi-variant helpers ----------
 
-from me80_tone_gen.generator import _evenly_spaced_temperatures
+from me80_tone_gen.generator import DEFAULT_TEMPERATURE, _evenly_spaced_temperatures
 
 
 @pytest.mark.parametrize(
     "n,expected",
     [
-        (1, [0.2]),
+        (1, [DEFAULT_TEMPERATURE]),
         (2, [0.2, 0.8]),
         (3, [0.2, 0.5, 0.8]),
         (5, [0.2, 0.35, 0.5, 0.65, 0.8]),
