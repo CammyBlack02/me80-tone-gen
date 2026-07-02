@@ -6,13 +6,21 @@ End-to-end with a real model is a manual smoke test, not a unit test.
 
 from __future__ import annotations
 
-import json
+import threading
 from typing import Any
 
 import pytest
 
-from me80_tone_gen.generator import SYSTEM_PROMPT, GenerationError, generate_patch
+from me80_tone_gen.generator import (
+    DEFAULT_TEMPERATURE,
+    SYSTEM_PROMPT,
+    GenerationError,
+    evenly_spaced_temperatures,
+    generate_patch,
+    generate_variants,
+)
 from me80_tone_gen.schema import SemanticPatch
+from tests.conftest import valid_patch_json as _valid_patch_json
 
 
 class FakeOllama:
@@ -29,28 +37,36 @@ class FakeOllama:
         return {"message": {"content": self.responses.pop(0)}}
 
 
-def _valid_patch_json(**overrides: Any) -> str:
-    payload = {
-        "patch_name": "BLUES LEAD",
-        "preamp": {"enabled": True, "type": "LEAD", "gain": 60, "bass": 50, "middle": 60, "treble": 55, "level": 50},
-        "od_ds": {"enabled": True, "type": "OVERDRIVE", "drive": 35, "tone": 55, "level": 55},
-        "comp": {"enabled": False, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
-        "mod": {"enabled": False, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
-        "eq_fx2": {"enabled": False, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
-        "delay": {"enabled": False, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
-        "reverb": {"enabled": True, "type": "SPRING", "level": 30},
-        "pedal_fx": {"enabled": False, "type": "WAH"},
-        "rationale": "test",
-    }
-    payload.update(overrides)
-    return json.dumps(payload)
+class ThreadSafeFakeOllama:
+    """Fake Ollama client whose response depends on the temperature it was called with.
+
+    Use this when `generate_variants` calls chat() from multiple threads — the
+    stock FakeOllama pops from a list which races. Keyed by temperature so tests
+    can verify order-preservation and per-variant temperature dispatch.
+    """
+
+    def __init__(self, responses_by_temp: dict[float, str]) -> None:
+        self.responses_by_temp = responses_by_temp
+        self.calls: list[dict[str, Any]] = []
+        self._lock = threading.Lock()
+
+    def chat(self, **kwargs: Any) -> dict[str, Any]:
+        with self._lock:
+            self.calls.append(kwargs)
+        temp = kwargs["options"]["temperature"]
+        if temp not in self.responses_by_temp:
+            raise AssertionError(
+                f"ThreadSafeFakeOllama got temperature {temp}, "
+                f"expected one of {sorted(self.responses_by_temp)}"
+            )
+        return {"message": {"content": self.responses_by_temp[temp]}}
 
 
 def test_generate_patch_returns_validated_semantic() -> None:
     fake = FakeOllama([_valid_patch_json()])
     patch = generate_patch("warm bluesy lead", client=fake, retries=0)
     assert isinstance(patch, SemanticPatch)
-    assert patch.patch_name == "BLUES LEAD"
+    assert patch.patch_name == "TEST PATCH"
     assert patch.preamp.type == "LEAD"
     assert patch.reverb.type == "SPRING"
 
@@ -59,7 +75,7 @@ def test_generate_patch_retries_on_invalid_json() -> None:
     """First response invalid → second one succeeds. Retry budget consumed."""
     fake = FakeOllama(["not json at all", _valid_patch_json()])
     patch = generate_patch("warm bluesy lead", client=fake, retries=1)
-    assert patch.patch_name == "BLUES LEAD"
+    assert patch.patch_name == "TEST PATCH"
     assert len(fake.calls) == 2
 
 
@@ -147,3 +163,94 @@ def test_system_prompt_demonstrates_off_state_concretely() -> None:
         f"expected at least 18 ': off' block lines in the few-shot examples, "
         f"got {off_block_lines}"
     )
+
+
+# ---------- multi-variant helpers ----------
+
+
+@pytest.mark.parametrize(
+    "n,expected",
+    [
+        (1, [DEFAULT_TEMPERATURE]),
+        (2, [0.2, 0.8]),
+        (3, [0.2, 0.5, 0.8]),
+        (5, [0.2, 0.35, 0.5, 0.65, 0.8]),
+    ],
+)
+def test_evenly_spaced_temperatures(n: int, expected: list[float]) -> None:
+    result = evenly_spaced_temperatures(n)
+    assert len(result) == n
+    for got, want in zip(result, expected, strict=True):
+        assert got == pytest.approx(want, abs=1e-9)
+
+
+def test_generate_variants_returns_n_patches() -> None:
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="VARIANT A"),
+        0.5: _valid_patch_json(patch_name="VARIANT B"),
+        0.8: _valid_patch_json(patch_name="VARIANT C"),
+    })
+    variants = generate_variants("bluesy lead", n=3, client=fake, retries=0)
+    assert len(variants) == 3
+    assert all(isinstance(v, SemanticPatch) for v in variants)
+
+
+def test_generate_variants_preserves_input_order() -> None:
+    """Results returned in temperature order, not thread-completion order."""
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="LOW TEMP"),
+        0.5: _valid_patch_json(patch_name="MID TEMP"),
+        0.8: _valid_patch_json(patch_name="HIGH TEMP"),
+    })
+    variants = generate_variants("bluesy lead", n=3, client=fake, retries=0)
+    assert variants[0].patch_name == "LOW TEMP"
+    assert variants[1].patch_name == "MID TEMP"
+    assert variants[2].patch_name == "HIGH TEMP"
+
+
+def test_generate_variants_temperature_per_call() -> None:
+    """Each variant call gets its own temperature; all temperatures used exactly once."""
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="A"),
+        0.5: _valid_patch_json(patch_name="B"),
+        0.8: _valid_patch_json(patch_name="C"),
+    })
+    generate_variants("bluesy lead", n=3, client=fake, retries=0)
+    seen_temps = sorted(call["options"]["temperature"] for call in fake.calls)
+    assert seen_temps == [0.2, 0.5, 0.8]
+
+
+def test_generate_variants_explicit_temperatures() -> None:
+    """Explicit temperatures= override the default spacing."""
+    fake = ThreadSafeFakeOllama({
+        0.1: _valid_patch_json(patch_name="A"),
+        0.9: _valid_patch_json(patch_name="B"),
+    })
+    variants = generate_variants(
+        "bluesy lead", n=2, temperatures=[0.1, 0.9], client=fake, retries=0
+    )
+    assert len(variants) == 2
+    seen_temps = sorted(call["options"]["temperature"] for call in fake.calls)
+    assert seen_temps == [0.1, 0.9]
+
+
+def test_generate_variants_temperature_length_mismatch_raises() -> None:
+    """Explicit temperatures with wrong length raises before any Ollama call."""
+    fake = ThreadSafeFakeOllama({})
+    with pytest.raises(ValueError, match="does not match"):
+        generate_variants(
+            "bluesy lead", n=3, temperatures=[0.2, 0.5], client=fake, retries=0
+        )
+    assert fake.calls == []  # no calls made
+
+
+def test_generate_variants_raises_on_any_failure() -> None:
+    """If ANY variant exhausts retries, the whole call raises. No partial results."""
+    # temp 0.5 will always fail (garbage response, retries=0 → no retry)
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="OK A"),
+        0.5: "totally not json",
+        0.8: _valid_patch_json(patch_name="OK C"),
+    })
+    with pytest.raises(GenerationError):
+        generate_variants("bluesy lead", n=3, client=fake, retries=0)

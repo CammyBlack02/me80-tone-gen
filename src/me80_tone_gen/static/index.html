@@ -78,6 +78,17 @@
   .results { display: none; }
   .results.visible { display: block; }
 
+  .variants-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 700px) { .variants-grid { grid-template-columns: 1fr; } }
+  .variant-card { background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; cursor: pointer; transition: border-color 100ms ease; }
+  .variant-card:hover { border-color: var(--accent-dim); }
+  .variant-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .variant-card .variant-label { font-family: var(--mono); font-size: 12px;
+    color: var(--text-dim); margin-bottom: 6px; }
+  .variant-card .patch-name { font-size: 16px; }
+  .variant-card pre.knob-list { font-size: 12px; padding: 10px; }
+
   .error { background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.4);
     border-radius: 6px; padding: 14px 16px; color: #ffa198; font-family: var(--mono);
     font-size: 13px; margin-bottom: 16px; }
@@ -114,8 +125,8 @@
         <input type="text" id="model" value="qwen2.5:14b" />
       </label>
       <label class="field">
-        <span class="label">Temperature</span>
-        <input type="number" id="temperature" value="0.3" step="0.1" min="0" max="2" />
+        <span class="label">Variants</span>
+        <input type="number" id="variants" value="1" min="1" max="5" />
       </label>
       <label class="field">
         <span class="label">Retries</span>
@@ -137,11 +148,10 @@
   </form>
 
   <section id="results" class="results">
-    <div class="card">
-      <div id="recipe-badge"></div>
-      <p class="patch-name" id="patch-name"></p>
-      <p class="rationale" id="rationale"></p>
-      <pre class="knob-list" id="knob-list"></pre>
+    <div id="recipe-badge"></div>
+    <div id="variants-container"></div>
+    <div class="controls" style="margin-top: 16px;">
+      <span id="pick-status" style="color: var(--text-dim); font-size: 13px;"></span>
       <div style="display: flex; gap: 8px;">
         <button class="secondary" id="download-btn">Download .tsl</button>
         <button class="secondary" id="copy-json-btn">Copy JSON</button>
@@ -161,7 +171,8 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-let lastResult = null;
+let activeVariantIdx = 0;
+let lastVariants = [];
 
 async function fetchHealth() {
   try {
@@ -213,17 +224,65 @@ async function copyJson(obj) {
   }
 }
 
-function renderResult(data) {
-  lastResult = data;
-  $("patch-name").textContent = data.patch.patch_name;
-  $("rationale").textContent = data.patch.rationale || "";
-  $("knob-list").textContent = data.knob_list_text;
-  const badge = $("recipe-badge");
-  if (data.recipe_matched_id) {
-    badge.innerHTML = `<span class="recipe-badge">Recipe: ${data.recipe_matched_id}</span>`;
-  } else {
-    badge.innerHTML = "";
+function renderVariantCard(variant, idx, isSingle) {
+  const card = document.createElement("div");
+  card.className = "variant-card" + (idx === activeVariantIdx ? " active" : "");
+  card.dataset.idx = String(idx);
+
+  if (!isSingle) {
+    const label = document.createElement("div");
+    label.className = "variant-label";
+    label.textContent = `Variant ${idx + 1}`;
+    card.appendChild(label);
   }
+
+  const name = document.createElement("p");
+  name.className = "patch-name";
+  name.textContent = variant.patch.patch_name;
+  card.appendChild(name);
+
+  const rationale = document.createElement("p");
+  rationale.className = "rationale";
+  rationale.textContent = variant.patch.rationale || "";
+  card.appendChild(rationale);
+
+  const knobs = document.createElement("pre");
+  knobs.className = "knob-list";
+  knobs.textContent = variant.knob_list_text;
+  card.appendChild(knobs);
+
+  card.addEventListener("click", () => setActive(idx));
+  return card;
+}
+
+function setActive(idx) {
+  activeVariantIdx = idx;
+  document.querySelectorAll(".variant-card").forEach((el) => {
+    el.classList.toggle("active", Number(el.dataset.idx) === idx);
+  });
+  const status = $("pick-status");
+  status.textContent = lastVariants.length > 1
+    ? `Active: variant ${idx + 1} of ${lastVariants.length}`
+    : "";
+}
+
+function renderResult(data) {
+  lastVariants = data.variants;
+  activeVariantIdx = 0;
+  const container = $("variants-container");
+  container.innerHTML = "";
+  const isSingle = lastVariants.length === 1;
+  container.className = isSingle ? "" : "variants-grid";
+  lastVariants.forEach((v, i) => container.appendChild(renderVariantCard(v, i, isSingle)));
+  const badge = $("recipe-badge");
+  badge.innerHTML = "";
+  if (data.recipe_matched_id) {
+    const chip = document.createElement("span");
+    chip.className = "recipe-badge";
+    chip.textContent = `Recipe: ${data.recipe_matched_id}`;
+    badge.appendChild(chip);
+  }
+  setActive(0);
   $("results").classList.add("visible");
   $("error").style.display = "none";
 }
@@ -247,10 +306,10 @@ $("gen-form").addEventListener("submit", async (e) => {
       body: JSON.stringify({
         description: $("description").value.trim(),
         model: $("model").value.trim(),
-        temperature: parseFloat($("temperature").value),
         retries: parseInt($("retries").value, 10),
         use_recipes: $("use-recipes").checked,
         liveset_name: $("liveset-name").value.trim() || "Generated",
+        variants: parseInt($("variants").value, 10) || 1,
       }),
     });
     if (!r.ok) {
@@ -269,13 +328,14 @@ $("gen-form").addEventListener("submit", async (e) => {
 });
 
 $("download-btn").addEventListener("click", () => {
-  if (!lastResult) return;
-  downloadTsl(lastResult.liveset, lastResult.patch.patch_name);
+  if (!lastVariants.length) return;
+  const v = lastVariants[activeVariantIdx];
+  downloadTsl(v.liveset, v.patch.patch_name);
 });
 
 $("copy-json-btn").addEventListener("click", () => {
-  if (!lastResult) return;
-  copyJson(lastResult.patch);
+  if (!lastVariants.length) return;
+  copyJson(lastVariants[activeVariantIdx].patch);
 });
 
 fetchHealth();

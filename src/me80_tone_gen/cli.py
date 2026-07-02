@@ -63,6 +63,76 @@ def _liveset_name_from(args: argparse.Namespace) -> str:
     return "Generated"
 
 
+def _generate_variants_for_cli(
+    description: str,
+    args: argparse.Namespace,
+    recipes: list[Recipe],
+) -> tuple[list[SemanticPatch], Recipe | None, list[float]]:
+    recipe = None if args.no_recipes else match_recipe(description, recipes)
+    seed = recipe.model_dump(exclude={"aliases"}) if recipe else None
+
+    temps: list[float] | None = None
+    if args.temperatures:
+        try:
+            temps = [float(t.strip()) for t in args.temperatures.split(",") if t.strip()]
+        except ValueError:
+            print(
+                f"error: could not parse --temperatures: {args.temperatures!r}",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+        if len(temps) != args.variants:
+            print(
+                f"error: --temperatures has {len(temps)} values but --variants is {args.variants}",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+
+    effective_temps = temps if temps is not None else generator.evenly_spaced_temperatures(args.variants)
+
+    variants = generator.generate_variants(
+        description,
+        n=args.variants,
+        temperatures=temps,
+        model=args.model,
+        retries=args.retries,
+        recipe_seed=seed,
+    )
+    return variants, recipe, effective_temps
+
+
+def _resolve_pick(args: argparse.Namespace, n: int) -> int:
+    """Return the 0-indexed picked variant. Prompts on TTY, otherwise uses --pick or 0."""
+    if args.pick is not None:
+        if not 1 <= args.pick <= n:
+            print(f"error: --pick must be 1..{n}, got {args.pick}", file=sys.stderr)
+            raise SystemExit(2)
+        return args.pick - 1
+
+    if not sys.stdin.isatty():
+        print(
+            "note: non-interactive stdin; picking variant 1 (use --pick N to override)",
+            file=sys.stderr,
+        )
+        return 0
+
+    try:
+        raw = input(f"Pick 1-{n} [1]: ").strip()
+    except EOFError:
+        return 0
+    if not raw:
+        return 0
+    try:
+        picked = int(raw)
+    except ValueError:
+        print(f"error: invalid pick: {raw!r}", file=sys.stderr)
+        raise SystemExit(2)
+    if not 1 <= picked <= n:
+        print(f"error: pick out of range: {picked} (must be 1..{n})", file=sys.stderr)
+        raise SystemExit(2)
+    return picked - 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="tone-gen",
@@ -110,10 +180,66 @@ def main(argv: list[str] | None = None) -> int:
         "--no-recipes", action="store_true",
         help="Disable recipe matching; rely purely on model knowledge.",
     )
+    parser.add_argument(
+        "--variants", type=int, default=1,
+        help="Generate N variants at different temperatures; user picks one (default: 1).",
+    )
+    parser.add_argument(
+        "--pick", type=int, default=None,
+        help="1-indexed variant to save when --variants > 1 (non-interactive).",
+    )
+    parser.add_argument(
+        "--temperatures", type=str, default=None,
+        help="Comma-separated per-variant temperatures (must match --variants count).",
+    )
 
     args = parser.parse_args(argv)
 
+    if args.batch and args.variants > 1:
+        print("error: --batch and --variants are mutually exclusive", file=sys.stderr)
+        raise SystemExit(2)
+
+    if args.variants < 1:
+        print("error: --variants must be >= 1", file=sys.stderr)
+        raise SystemExit(2)
+
     recipes = [] if args.no_recipes else load_recipes(args.recipes)
+    liveset_name = _liveset_name_from(args)
+
+    if args.variants > 1:
+        try:
+            description = _read_description(args)
+            variants, recipe, temps_used = _generate_variants_for_cli(description, args, recipes)
+        except GenerationError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            if exc.last_error:
+                print(f"  last validation error: {exc.last_error}", file=sys.stderr)
+            return 1
+
+        if args.json:
+            payload = {"variants": [v.model_dump() for v in variants]}
+            print(json.dumps(payload, indent=2))
+            return 0
+
+        for i, (variant, temp) in enumerate(zip(variants, temps_used, strict=True), start=1):
+            print(f"=== Variant {i} (temperature={temp:.2f}) ===")
+            if recipe:
+                print(f"  Recipe matched: {recipe.id}")
+            liveset = build_liveset([variant], liveset_name)
+            print(render_knob_list(liveset["patchList"][0]))
+            if variant.rationale:
+                print(f"  Rationale: {variant.rationale}")
+            print()
+
+        if args.output:
+            picked_idx = _resolve_pick(args, len(variants))
+            picked = variants[picked_idx]
+            out = write_tsl([picked], liveset_name, args.output)
+            print(f"Wrote {out} (variant {picked_idx + 1})", file=sys.stderr)
+        else:
+            print("note: no -o given; variants shown above are not saved", file=sys.stderr)
+
+        return 0
 
     try:
         if args.batch:
@@ -131,8 +257,6 @@ def main(argv: list[str] | None = None) -> int:
     patches = [r[0] for r in results]
     matched = [r[1] for r in results]
 
-    liveset_name = _liveset_name_from(args)
-
     if args.output:
         out = write_tsl(patches, liveset_name, args.output)
         if not args.json:
@@ -143,7 +267,6 @@ def main(argv: list[str] | None = None) -> int:
         print(liveset_to_json(liveset))
         return 0
 
-    # Human-readable: render each patch's knob list paired with its rationale.
     liveset = build_liveset(patches, liveset_name)
     for semantic, patch, recipe in zip(patches, liveset["patchList"], matched, strict=True):
         if recipe:
