@@ -151,3 +151,26 @@ def test_variants_interactive_empty_input_defaults_to_1(
     assert rc == 0
     written = json.loads(output.read_text())
     assert written["patchList"][0]["name"].rstrip() == "V1"
+
+
+def test_variants_json_mode_emits_all(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    variants = [_valid_patch(patch_name=f"V{i+1}") for i in range(3)]
+    monkeypatch.setattr(
+        "me80_tone_gen.cli.generator.generate_variants",
+        lambda description, **kw: variants,
+    )
+    rc = cli.main([
+        "warm bluesy lead",
+        "--variants", "3",
+        "--json",
+        "--no-recipes",
+    ])
+    assert rc == 0
+    out = capsys.readouterr().out
+    payload = json.loads(out)
+    assert "variants" in payload
+    assert len(payload["variants"]) == 3
+    assert [v["patch_name"] for v in payload["variants"]] == ["V1", "V2", "V3"]
