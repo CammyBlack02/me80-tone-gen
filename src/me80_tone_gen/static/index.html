@@ -282,7 +282,7 @@ function renderResult(data) {
     chip.textContent = `Recipe: ${data.recipe_matched_id}`;
     badge.appendChild(chip);
   }
-  $("pick-status").textContent = isSingle ? "" : `Active: variant 1 of ${lastVariants.length}`;
+  setActive(0);
   $("results").classList.add("visible");
   $("error").style.display = "none";
 }
