@@ -194,3 +194,17 @@ def test_evenly_spaced_temperatures(n: int, expected: list[float]) -> None:
     assert len(result) == n
     for got, want in zip(result, expected, strict=True):
         assert got == pytest.approx(want, abs=1e-9)
+
+
+from me80_tone_gen.generator import generate_variants
+
+
+def test_generate_variants_returns_n_patches() -> None:
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="VARIANT A"),
+        0.5: _valid_patch_json(patch_name="VARIANT B"),
+        0.8: _valid_patch_json(patch_name="VARIANT C"),
+    })
+    variants = generate_variants("bluesy lead", n=3, client=fake, retries=0)
+    assert len(variants) == 3
+    assert all(isinstance(v, SemanticPatch) for v in variants)

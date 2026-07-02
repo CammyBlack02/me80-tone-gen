@@ -8,6 +8,7 @@ re-validate after parsing — structural validity ≠ musical sensibility.
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from pydantic import ValidationError
@@ -221,3 +222,52 @@ def generate_patch(
         last_raw=last_raw,
         last_error=last_error,
     )
+
+
+def generate_variants(
+    description: str,
+    *,
+    n: int = 3,
+    temperatures: list[float] | None = None,
+    model: str = DEFAULT_MODEL,
+    retries: int = DEFAULT_RETRIES,
+    recipe_seed: dict | None = None,
+    client: "object | None" = None,
+) -> list[SemanticPatch]:
+    """Generate N patches in parallel with per-variant temperature.
+
+    If `temperatures` is None: uses `_evenly_spaced_temperatures(n)`.
+    If `temperatures` is provided: its length MUST equal `n`; a mismatch
+    raises ValueError before any Ollama calls are made.
+
+    Results are returned in input (temperature) order, not completion order.
+    If any variant raises GenerationError, the whole call raises — no partial
+    success.
+    """
+    if temperatures is None:
+        temps = _evenly_spaced_temperatures(n)
+    else:
+        if len(temperatures) != n:
+            raise ValueError(
+                f"len(temperatures)={len(temperatures)} does not match n={n}"
+            )
+        temps = list(temperatures)
+
+    if client is None:
+        import ollama
+        client = ollama.Client()
+
+    with ThreadPoolExecutor(max_workers=n) as executor:
+        futures = [
+            executor.submit(
+                generate_patch,
+                description,
+                model=model,
+                temperature=t,
+                retries=retries,
+                recipe_seed=recipe_seed,
+                client=client,
+            )
+            for t in temps
+        ]
+        return [f.result() for f in futures]
