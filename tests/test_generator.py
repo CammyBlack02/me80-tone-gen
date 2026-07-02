@@ -208,3 +208,16 @@ def test_generate_variants_returns_n_patches() -> None:
     variants = generate_variants("bluesy lead", n=3, client=fake, retries=0)
     assert len(variants) == 3
     assert all(isinstance(v, SemanticPatch) for v in variants)
+
+
+def test_generate_variants_preserves_input_order() -> None:
+    """Results returned in temperature order, not thread-completion order."""
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="LOW TEMP"),
+        0.5: _valid_patch_json(patch_name="MID TEMP"),
+        0.8: _valid_patch_json(patch_name="HIGH TEMP"),
+    })
+    variants = generate_variants("bluesy lead", n=3, client=fake, retries=0)
+    assert variants[0].patch_name == "LOW TEMP"
+    assert variants[1].patch_name == "MID TEMP"
+    assert variants[2].patch_name == "HIGH TEMP"
