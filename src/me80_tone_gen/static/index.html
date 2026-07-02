@@ -78,6 +78,17 @@
   .results { display: none; }
   .results.visible { display: block; }
 
+  .variants-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 700px) { .variants-grid { grid-template-columns: 1fr; } }
+  .variant-card { background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; cursor: pointer; transition: border-color 100ms ease; }
+  .variant-card:hover { border-color: var(--accent-dim); }
+  .variant-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .variant-card .variant-label { font-family: var(--mono); font-size: 12px;
+    color: var(--text-dim); margin-bottom: 6px; }
+  .variant-card .patch-name { font-size: 16px; }
+  .variant-card pre.knob-list { font-size: 12px; padding: 10px; }
+
   .error { background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.4);
     border-radius: 6px; padding: 14px 16px; color: #ffa198; font-family: var(--mono);
     font-size: 13px; margin-bottom: 16px; }
@@ -137,11 +148,10 @@
   </form>
 
   <section id="results" class="results">
-    <div class="card">
-      <div id="recipe-badge"></div>
-      <p class="patch-name" id="patch-name"></p>
-      <p class="rationale" id="rationale"></p>
-      <pre class="knob-list" id="knob-list"></pre>
+    <div id="recipe-badge"></div>
+    <div id="variants-container"></div>
+    <div class="controls" style="margin-top: 16px;">
+      <span id="pick-status" style="color: var(--text-dim); font-size: 13px;"></span>
       <div style="display: flex; gap: 8px;">
         <button class="secondary" id="download-btn">Download .tsl</button>
         <button class="secondary" id="copy-json-btn">Copy JSON</button>
@@ -161,7 +171,8 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-let lastResult = null;
+let activeVariantIdx = 0;
+let lastVariants = [];
 
 async function fetchHealth() {
   try {
@@ -213,17 +224,45 @@ async function copyJson(obj) {
   }
 }
 
+function renderVariantCard(variant, idx, isSingle) {
+  const card = document.createElement("div");
+  card.className = "variant-card" + (idx === activeVariantIdx ? " active" : "");
+  card.dataset.idx = String(idx);
+  const label = isSingle ? "" : `<div class="variant-label">Variant ${idx + 1}</div>`;
+  card.innerHTML = `
+    ${label}
+    <p class="patch-name">${variant.patch.patch_name}</p>
+    <p class="rationale">${variant.patch.rationale || ""}</p>
+    <pre class="knob-list">${variant.knob_list_text}</pre>
+  `;
+  card.addEventListener("click", () => setActive(idx));
+  return card;
+}
+
+function setActive(idx) {
+  activeVariantIdx = idx;
+  document.querySelectorAll(".variant-card").forEach((el) => {
+    el.classList.toggle("active", Number(el.dataset.idx) === idx);
+  });
+  const status = $("pick-status");
+  status.textContent = lastVariants.length > 1
+    ? `Active: variant ${idx + 1} of ${lastVariants.length}`
+    : "";
+}
+
 function renderResult(data) {
-  lastResult = data;
-  $("patch-name").textContent = data.patch.patch_name;
-  $("rationale").textContent = data.patch.rationale || "";
-  $("knob-list").textContent = data.knob_list_text;
+  lastVariants = data.variants;
+  activeVariantIdx = 0;
+  const container = $("variants-container");
+  container.innerHTML = "";
+  const isSingle = lastVariants.length === 1;
+  container.className = isSingle ? "" : "variants-grid";
+  lastVariants.forEach((v, i) => container.appendChild(renderVariantCard(v, i, isSingle)));
   const badge = $("recipe-badge");
-  if (data.recipe_matched_id) {
-    badge.innerHTML = `<span class="recipe-badge">Recipe: ${data.recipe_matched_id}</span>`;
-  } else {
-    badge.innerHTML = "";
-  }
+  badge.innerHTML = data.recipe_matched_id
+    ? `<span class="recipe-badge">Recipe: ${data.recipe_matched_id}</span>`
+    : "";
+  $("pick-status").textContent = isSingle ? "" : `Active: variant 1 of ${lastVariants.length}`;
   $("results").classList.add("visible");
   $("error").style.display = "none";
 }
@@ -269,13 +308,14 @@ $("gen-form").addEventListener("submit", async (e) => {
 });
 
 $("download-btn").addEventListener("click", () => {
-  if (!lastResult) return;
-  downloadTsl(lastResult.liveset, lastResult.patch.patch_name);
+  if (!lastVariants.length) return;
+  const v = lastVariants[activeVariantIdx];
+  downloadTsl(v.liveset, v.patch.patch_name);
 });
 
 $("copy-json-btn").addEventListener("click", () => {
-  if (!lastResult) return;
-  copyJson(lastResult.patch);
+  if (!lastVariants.length) return;
+  copyJson(lastVariants[activeVariantIdx].patch);
 });
 
 fetchHealth();
