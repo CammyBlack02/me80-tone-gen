@@ -7,6 +7,7 @@ End-to-end with a real model is a manual smoke test, not a unit test.
 from __future__ import annotations
 
 import json
+import threading
 from typing import Any
 
 import pytest
@@ -27,6 +28,31 @@ class FakeOllama:
         if not self.responses:
             raise AssertionError("FakeOllama exhausted")
         return {"message": {"content": self.responses.pop(0)}}
+
+
+class ThreadSafeFakeOllama:
+    """Fake Ollama client whose response depends on the temperature it was called with.
+
+    Use this when `generate_variants` calls chat() from multiple threads — the
+    stock FakeOllama pops from a list which races. Keyed by temperature so tests
+    can verify order-preservation and per-variant temperature dispatch.
+    """
+
+    def __init__(self, responses_by_temp: dict[float, str]) -> None:
+        self.responses_by_temp = responses_by_temp
+        self.calls: list[dict[str, Any]] = []
+        self._lock = threading.Lock()
+
+    def chat(self, **kwargs: Any) -> dict[str, Any]:
+        with self._lock:
+            self.calls.append(kwargs)
+        temp = kwargs["options"]["temperature"]
+        if temp not in self.responses_by_temp:
+            raise AssertionError(
+                f"ThreadSafeFakeOllama got temperature {temp}, "
+                f"expected one of {sorted(self.responses_by_temp)}"
+            )
+        return {"message": {"content": self.responses_by_temp[temp]}}
 
 
 def _valid_patch_json(**overrides: Any) -> str:
