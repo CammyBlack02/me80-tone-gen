@@ -67,7 +67,7 @@ def _generate_variants_for_cli(
     description: str,
     args: argparse.Namespace,
     recipes: list[Recipe],
-) -> tuple[list[SemanticPatch], Recipe | None]:
+) -> tuple[list[SemanticPatch], Recipe | None, list[float]]:
     recipe = None if args.no_recipes else match_recipe(description, recipes)
     seed = recipe.model_dump(exclude={"aliases"}) if recipe else None
 
@@ -88,6 +88,8 @@ def _generate_variants_for_cli(
             )
             raise SystemExit(2)
 
+    effective_temps = temps if temps is not None else generator._evenly_spaced_temperatures(args.variants)
+
     variants = generator.generate_variants(
         description,
         n=args.variants,
@@ -96,15 +98,7 @@ def _generate_variants_for_cli(
         retries=args.retries,
         recipe_seed=seed,
     )
-    return variants, recipe
-
-
-def _variant_temp_hint(idx_1based: int, total: int) -> float:
-    """Approximate temperature label for a variant (for display only)."""
-    if total == 1:
-        return 0.2
-    step = (0.8 - 0.2) / (total - 1)
-    return 0.2 + (idx_1based - 1) * step
+    return variants, recipe, effective_temps
 
 
 def _resolve_pick(args: argparse.Namespace, n: int) -> int:
@@ -215,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.variants > 1:
         try:
             description = _read_description(args)
-            variants, recipe = _generate_variants_for_cli(description, args, recipes)
+            variants, recipe, temps_used = _generate_variants_for_cli(description, args, recipes)
         except GenerationError as exc:
             print(f"error: {exc}", file=sys.stderr)
             if exc.last_error:
@@ -227,8 +221,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(payload, indent=2))
             return 0
 
-        for i, variant in enumerate(variants, start=1):
-            print(f"=== Variant {i} (temperature≈{_variant_temp_hint(i, args.variants):.2f}) ===")
+        for i, (variant, temp) in enumerate(zip(variants, temps_used, strict=True), start=1):
+            print(f"=== Variant {i} (temperature={temp:.2f}) ===")
             if recipe:
                 print(f"  Recipe matched: {recipe.id}")
             liveset = build_liveset([variant], liveset_name)
