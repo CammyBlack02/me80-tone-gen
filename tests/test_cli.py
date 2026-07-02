@@ -45,3 +45,59 @@ def test_batch_and_variants_rejected(tmp_path: Path, capsys: pytest.CaptureFixtu
     assert exc_info.value.code != 0
     err = capsys.readouterr().err
     assert "mutually exclusive" in err.lower()
+
+
+def test_variants_flag_calls_generate_variants(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """--variants 3 --pick 2 -o file.tsl writes the SECOND variant."""
+    variants = [
+        _valid_patch(patch_name="VARIANT A"),
+        _valid_patch(patch_name="VARIANT B"),
+        _valid_patch(patch_name="VARIANT C"),
+    ]
+    call_args: dict[str, Any] = {}
+
+    def fake_gv(description: str, **kwargs: Any) -> list[SemanticPatch]:
+        call_args["description"] = description
+        call_args["kwargs"] = kwargs
+        return variants
+
+    monkeypatch.setattr("me80_tone_gen.cli.generator.generate_variants", fake_gv)
+
+    output = tmp_path / "picked.tsl"
+    rc = cli.main([
+        "warm bluesy lead",
+        "--variants", "3",
+        "--pick", "2",
+        "-o", str(output),
+        "--no-recipes",
+    ])
+    assert rc == 0
+    assert call_args["kwargs"]["n"] == 3
+    assert output.exists()
+    written = json.loads(output.read_text())
+    patch_name = written["patchList"][0]["name"].rstrip()
+    assert patch_name == "VARIANT B"
+
+
+def test_variants_pick_out_of_range_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    variants = [_valid_patch(patch_name=f"V{i}") for i in range(3)]
+    monkeypatch.setattr(
+        "me80_tone_gen.cli.generator.generate_variants",
+        lambda description, **kw: variants,
+    )
+    with pytest.raises(SystemExit):
+        cli.main([
+            "warm bluesy lead",
+            "--variants", "3",
+            "--pick", "9",
+            "--no-recipes",
+        ])
+    err = capsys.readouterr().err
+    assert "pick" in err.lower()
