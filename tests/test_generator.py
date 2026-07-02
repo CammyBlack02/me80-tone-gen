@@ -6,7 +6,6 @@ End-to-end with a real model is a manual smoke test, not a unit test.
 
 from __future__ import annotations
 
-import json
 import threading
 from typing import Any
 
@@ -14,6 +13,7 @@ import pytest
 
 from me80_tone_gen.generator import SYSTEM_PROMPT, GenerationError, generate_patch
 from me80_tone_gen.schema import SemanticPatch
+from tests.conftest import valid_patch_json as _valid_patch_json
 
 
 class FakeOllama:
@@ -55,28 +55,11 @@ class ThreadSafeFakeOllama:
         return {"message": {"content": self.responses_by_temp[temp]}}
 
 
-def _valid_patch_json(**overrides: Any) -> str:
-    payload = {
-        "patch_name": "BLUES LEAD",
-        "preamp": {"enabled": True, "type": "LEAD", "gain": 60, "bass": 50, "middle": 60, "treble": 55, "level": 50},
-        "od_ds": {"enabled": True, "type": "OVERDRIVE", "drive": 35, "tone": 55, "level": 55},
-        "comp": {"enabled": False, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
-        "mod": {"enabled": False, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
-        "eq_fx2": {"enabled": False, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
-        "delay": {"enabled": False, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
-        "reverb": {"enabled": True, "type": "SPRING", "level": 30},
-        "pedal_fx": {"enabled": False, "type": "WAH"},
-        "rationale": "test",
-    }
-    payload.update(overrides)
-    return json.dumps(payload)
-
-
 def test_generate_patch_returns_validated_semantic() -> None:
     fake = FakeOllama([_valid_patch_json()])
     patch = generate_patch("warm bluesy lead", client=fake, retries=0)
     assert isinstance(patch, SemanticPatch)
-    assert patch.patch_name == "BLUES LEAD"
+    assert patch.patch_name == "TEST PATCH"
     assert patch.preamp.type == "LEAD"
     assert patch.reverb.type == "SPRING"
 
@@ -85,7 +68,7 @@ def test_generate_patch_retries_on_invalid_json() -> None:
     """First response invalid → second one succeeds. Retry budget consumed."""
     fake = FakeOllama(["not json at all", _valid_patch_json()])
     patch = generate_patch("warm bluesy lead", client=fake, retries=1)
-    assert patch.patch_name == "BLUES LEAD"
+    assert patch.patch_name == "TEST PATCH"
     assert len(fake.calls) == 2
 
 
