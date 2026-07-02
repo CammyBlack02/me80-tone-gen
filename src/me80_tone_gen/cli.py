@@ -231,12 +231,13 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  Rationale: {variant.rationale}")
             print()
 
-        picked_idx = _resolve_pick(args, len(variants))
-        picked = variants[picked_idx]
-
         if args.output:
+            picked_idx = _resolve_pick(args, len(variants))
+            picked = variants[picked_idx]
             out = write_tsl([picked], liveset_name, args.output)
             print(f"Wrote {out} (variant {picked_idx + 1})", file=sys.stderr)
+        else:
+            print("note: no -o given; variants shown above are not saved", file=sys.stderr)
 
         return 0
 

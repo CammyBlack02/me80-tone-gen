@@ -85,6 +85,7 @@ def test_variants_flag_calls_generate_variants(
 
 def test_variants_pick_out_of_range_errors(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     variants = [_valid_patch(patch_name=f"V{i}") for i in range(3)]
@@ -92,11 +93,13 @@ def test_variants_pick_out_of_range_errors(
         "me80_tone_gen.cli.generator.generate_variants",
         lambda description, **kw: variants,
     )
+    output = tmp_path / "picked.tsl"
     with pytest.raises(SystemExit):
         cli.main([
             "warm bluesy lead",
             "--variants", "3",
             "--pick", "9",
+            "-o", str(output),
             "--no-recipes",
         ])
     err = capsys.readouterr().err
