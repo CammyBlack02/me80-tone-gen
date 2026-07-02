@@ -114,8 +114,8 @@
         <input type="text" id="model" value="qwen2.5:14b" />
       </label>
       <label class="field">
-        <span class="label">Temperature</span>
-        <input type="number" id="temperature" value="0.3" step="0.1" min="0" max="2" />
+        <span class="label">Variants</span>
+        <input type="number" id="variants" value="1" min="1" max="5" />
       </label>
       <label class="field">
         <span class="label">Retries</span>
@@ -247,10 +247,10 @@ $("gen-form").addEventListener("submit", async (e) => {
       body: JSON.stringify({
         description: $("description").value.trim(),
         model: $("model").value.trim(),
-        temperature: parseFloat($("temperature").value),
         retries: parseInt($("retries").value, 10),
         use_recipes: $("use-recipes").checked,
         liveset_name: $("liveset-name").value.trim() || "Generated",
+        variants: parseInt($("variants").value, 10) || 1,
       }),
     });
     if (!r.ok) {
