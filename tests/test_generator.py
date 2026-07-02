@@ -257,3 +257,15 @@ def test_generate_variants_temperature_length_mismatch_raises() -> None:
             "bluesy lead", n=3, temperatures=[0.2, 0.5], client=fake, retries=0
         )
     assert fake.calls == []  # no calls made
+
+
+def test_generate_variants_raises_on_any_failure() -> None:
+    """If ANY variant exhausts retries, the whole call raises. No partial results."""
+    # temp 0.5 will always fail (garbage response, retries=0 → no retry)
+    fake = ThreadSafeFakeOllama({
+        0.2: _valid_patch_json(patch_name="OK A"),
+        0.5: "totally not json",
+        0.8: _valid_patch_json(patch_name="OK C"),
+    })
+    with pytest.raises(GenerationError):
+        generate_variants("bluesy lead", n=3, client=fake, retries=0)
