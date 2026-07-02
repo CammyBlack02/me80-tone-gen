@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from . import __version__, generator
-from .generator import DEFAULT_MODEL, DEFAULT_TEMPERATURE, GenerationError
+from .generator import DEFAULT_MODEL, GenerationError
 from .recipes import Recipe, load_recipes, match_recipe
 from .renderer import render_knob_list
 from .schema import SemanticPatch
@@ -36,18 +36,22 @@ _RECIPES: list[Recipe] = load_recipes()
 class GenerateRequest(BaseModel):
     description: str = Field(min_length=1, max_length=500)
     model: str = DEFAULT_MODEL
-    temperature: float = Field(default=DEFAULT_TEMPERATURE, ge=0.0, le=2.0)
     retries: int = Field(default=2, ge=0, le=5)
     use_recipes: bool = True
     liveset_name: str = "Generated"
+    variants: int = Field(default=1, ge=1, le=5)
+
+
+class VariantResult(BaseModel):
+    patch: SemanticPatch
+    knob_list_text: str
+    liveset: dict[str, Any]
 
 
 class GenerateResponse(BaseModel):
-    patch: SemanticPatch
-    knob_list_text: str
+    variants: list[VariantResult]
     recipe_matched_id: str | None
     recipe_matched_description: str | None
-    liveset: dict[str, Any]
 
 
 @app.get("/api/health")
@@ -72,10 +76,10 @@ def generate(req: GenerateRequest) -> GenerateResponse:
     seed = recipe.model_dump(exclude={"aliases"}) if recipe else None
 
     try:
-        patch = generator.generate_patch(
+        patches = generator.generate_variants(
             req.description,
+            n=req.variants,
             model=req.model,
-            temperature=req.temperature,
             retries=req.retries,
             recipe_seed=seed,
         )
@@ -85,13 +89,21 @@ def generate(req: GenerateRequest) -> GenerateResponse:
             detail={"message": str(exc), "last_error": exc.last_error},
         ) from exc
 
-    liveset = build_liveset([patch], req.liveset_name)
+    variant_results: list[VariantResult] = []
+    for patch in patches:
+        liveset = build_liveset([patch], req.liveset_name)
+        variant_results.append(
+            VariantResult(
+                patch=patch,
+                knob_list_text=render_knob_list(liveset["patchList"][0]),
+                liveset=liveset,
+            )
+        )
+
     return GenerateResponse(
-        patch=patch,
-        knob_list_text=render_knob_list(liveset["patchList"][0]),
+        variants=variant_results,
         recipe_matched_id=recipe.id if recipe else None,
         recipe_matched_description=recipe.description if recipe else None,
-        liveset=liveset,
     )
 
 
