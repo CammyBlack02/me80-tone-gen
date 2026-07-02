@@ -160,7 +160,7 @@ def test_system_prompt_demonstrates_off_state_concretely() -> None:
 
 # ---------- multi-variant helpers ----------
 
-from me80_tone_gen.generator import DEFAULT_TEMPERATURE, _evenly_spaced_temperatures
+from me80_tone_gen.generator import DEFAULT_TEMPERATURE, evenly_spaced_temperatures
 
 
 @pytest.mark.parametrize(
@@ -173,7 +173,7 @@ from me80_tone_gen.generator import DEFAULT_TEMPERATURE, _evenly_spaced_temperat
     ],
 )
 def test_evenly_spaced_temperatures(n: int, expected: list[float]) -> None:
-    result = _evenly_spaced_temperatures(n)
+    result = evenly_spaced_temperatures(n)
     assert len(result) == n
     for got, want in zip(result, expected, strict=True):
         assert got == pytest.approx(want, abs=1e-9)

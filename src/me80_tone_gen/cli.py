@@ -88,7 +88,7 @@ def _generate_variants_for_cli(
             )
             raise SystemExit(2)
 
-    effective_temps = temps if temps is not None else generator._evenly_spaced_temperatures(args.variants)
+    effective_temps = temps if temps is not None else generator.evenly_spaced_temperatures(args.variants)
 
     variants = generator.generate_variants(
         description,

@@ -23,7 +23,7 @@ _VARIANT_TEMP_LO = 0.2
 _VARIANT_TEMP_HI = 0.8
 
 
-def _evenly_spaced_temperatures(n: int) -> list[float]:
+def evenly_spaced_temperatures(n: int) -> list[float]:
     """N temperatures for variant generation.
 
     n=1 → [DEFAULT_TEMPERATURE] (single variant means no diversity; use the
@@ -237,7 +237,7 @@ def generate_variants(
 ) -> list[SemanticPatch]:
     """Generate N patches in parallel with per-variant temperature.
 
-    If `temperatures` is None: uses `_evenly_spaced_temperatures(n)`.
+    If `temperatures` is None: uses `evenly_spaced_temperatures(n)`.
     If `temperatures` is provided: its length MUST equal `n`; a mismatch
     raises ValueError before any Ollama calls are made.
 
@@ -246,7 +246,7 @@ def generate_variants(
     success.
     """
     if temperatures is None:
-        temps = _evenly_spaced_temperatures(n)
+        temps = evenly_spaced_temperatures(n)
     else:
         if len(temperatures) != n:
             raise ValueError(
