@@ -125,6 +125,10 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
+    if args.batch and args.variants > 1:
+        print("error: --batch and --variants are mutually exclusive", file=sys.stderr)
+        raise SystemExit(2)
+
     recipes = [] if args.no_recipes else load_recipes(args.recipes)
 
     try:
