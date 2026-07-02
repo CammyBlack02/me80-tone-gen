@@ -101,3 +101,53 @@ def test_variants_pick_out_of_range_errors(
         ])
     err = capsys.readouterr().err
     assert "pick" in err.lower()
+
+
+def test_variants_interactive_prompt_picks_input(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """TTY user typing '3' picks the third variant."""
+    variants = [_valid_patch(patch_name=f"V{i+1}") for i in range(3)]
+    monkeypatch.setattr(
+        "me80_tone_gen.cli.generator.generate_variants",
+        lambda description, **kw: variants,
+    )
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "3")
+
+    output = tmp_path / "picked.tsl"
+    rc = cli.main([
+        "warm bluesy lead",
+        "--variants", "3",
+        "-o", str(output),
+        "--no-recipes",
+    ])
+    assert rc == 0
+    written = json.loads(output.read_text())
+    assert written["patchList"][0]["name"].rstrip() == "V3"
+
+
+def test_variants_interactive_empty_input_defaults_to_1(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    variants = [_valid_patch(patch_name=f"V{i+1}") for i in range(3)]
+    monkeypatch.setattr(
+        "me80_tone_gen.cli.generator.generate_variants",
+        lambda description, **kw: variants,
+    )
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "")
+
+    output = tmp_path / "picked.tsl"
+    rc = cli.main([
+        "warm bluesy lead",
+        "--variants", "3",
+        "-o", str(output),
+        "--no-recipes",
+    ])
+    assert rc == 0
+    written = json.loads(output.read_text())
+    assert written["patchList"][0]["name"].rstrip() == "V1"
