@@ -110,6 +110,18 @@ def main(argv: list[str] | None = None) -> int:
         "--no-recipes", action="store_true",
         help="Disable recipe matching; rely purely on model knowledge.",
     )
+    parser.add_argument(
+        "--variants", type=int, default=1,
+        help="Generate N variants at different temperatures; user picks one (default: 1).",
+    )
+    parser.add_argument(
+        "--pick", type=int, default=None,
+        help="1-indexed variant to save when --variants > 1 (non-interactive).",
+    )
+    parser.add_argument(
+        "--temperatures", type=str, default=None,
+        help="Comma-separated per-variant temperatures (must match --variants count).",
+    )
 
     args = parser.parse_args(argv)
 
