@@ -11,7 +11,14 @@ from typing import Any
 
 import pytest
 
-from me80_tone_gen.generator import SYSTEM_PROMPT, GenerationError, generate_patch
+from me80_tone_gen.generator import (
+    DEFAULT_TEMPERATURE,
+    SYSTEM_PROMPT,
+    GenerationError,
+    evenly_spaced_temperatures,
+    generate_patch,
+    generate_variants,
+)
 from me80_tone_gen.schema import SemanticPatch
 from tests.conftest import valid_patch_json as _valid_patch_json
 
@@ -160,8 +167,6 @@ def test_system_prompt_demonstrates_off_state_concretely() -> None:
 
 # ---------- multi-variant helpers ----------
 
-from me80_tone_gen.generator import DEFAULT_TEMPERATURE, evenly_spaced_temperatures
-
 
 @pytest.mark.parametrize(
     "n,expected",
@@ -177,9 +182,6 @@ def test_evenly_spaced_temperatures(n: int, expected: list[float]) -> None:
     assert len(result) == n
     for got, want in zip(result, expected, strict=True):
         assert got == pytest.approx(want, abs=1e-9)
-
-
-from me80_tone_gen.generator import generate_variants
 
 
 def test_generate_variants_returns_n_patches() -> None:
