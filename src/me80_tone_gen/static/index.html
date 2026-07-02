@@ -228,13 +228,29 @@ function renderVariantCard(variant, idx, isSingle) {
   const card = document.createElement("div");
   card.className = "variant-card" + (idx === activeVariantIdx ? " active" : "");
   card.dataset.idx = String(idx);
-  const label = isSingle ? "" : `<div class="variant-label">Variant ${idx + 1}</div>`;
-  card.innerHTML = `
-    ${label}
-    <p class="patch-name">${variant.patch.patch_name}</p>
-    <p class="rationale">${variant.patch.rationale || ""}</p>
-    <pre class="knob-list">${variant.knob_list_text}</pre>
-  `;
+
+  if (!isSingle) {
+    const label = document.createElement("div");
+    label.className = "variant-label";
+    label.textContent = `Variant ${idx + 1}`;
+    card.appendChild(label);
+  }
+
+  const name = document.createElement("p");
+  name.className = "patch-name";
+  name.textContent = variant.patch.patch_name;
+  card.appendChild(name);
+
+  const rationale = document.createElement("p");
+  rationale.className = "rationale";
+  rationale.textContent = variant.patch.rationale || "";
+  card.appendChild(rationale);
+
+  const knobs = document.createElement("pre");
+  knobs.className = "knob-list";
+  knobs.textContent = variant.knob_list_text;
+  card.appendChild(knobs);
+
   card.addEventListener("click", () => setActive(idx));
   return card;
 }
@@ -259,9 +275,13 @@ function renderResult(data) {
   container.className = isSingle ? "" : "variants-grid";
   lastVariants.forEach((v, i) => container.appendChild(renderVariantCard(v, i, isSingle)));
   const badge = $("recipe-badge");
-  badge.innerHTML = data.recipe_matched_id
-    ? `<span class="recipe-badge">Recipe: ${data.recipe_matched_id}</span>`
-    : "";
+  badge.innerHTML = "";
+  if (data.recipe_matched_id) {
+    const chip = document.createElement("span");
+    chip.className = "recipe-badge";
+    chip.textContent = `Recipe: ${data.recipe_matched_id}`;
+    badge.appendChild(chip);
+  }
   $("pick-status").textContent = isSingle ? "" : `Active: variant 1 of ${lastVariants.length}`;
   $("results").classList.add("visible");
   $("error").style.display = "none";
