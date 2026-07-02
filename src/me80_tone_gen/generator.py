@@ -18,6 +18,22 @@ DEFAULT_MODEL = "qwen2.5:14b"
 DEFAULT_TEMPERATURE = 0.3
 DEFAULT_RETRIES = 2
 
+_VARIANT_TEMP_LO = 0.2
+_VARIANT_TEMP_HI = 0.8
+
+
+def _evenly_spaced_temperatures(n: int) -> list[float]:
+    """N temperatures evenly spaced across [0.2, 0.8] inclusive.
+
+    n=1 → [0.2] (lowest — the "confident" variant is the safest default).
+    """
+    if n < 1:
+        raise ValueError(f"n must be >= 1, got {n}")
+    if n == 1:
+        return [_VARIANT_TEMP_LO]
+    step = (_VARIANT_TEMP_HI - _VARIANT_TEMP_LO) / (n - 1)
+    return [_VARIANT_TEMP_LO + i * step for i in range(n)]
+
 
 SYSTEM_PROMPT = """\
 You are a Boss ME-80 patch designer. Convert a natural-language tone description

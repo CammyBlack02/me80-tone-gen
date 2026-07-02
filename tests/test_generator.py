@@ -147,3 +147,24 @@ def test_system_prompt_demonstrates_off_state_concretely() -> None:
         f"expected at least 18 ': off' block lines in the few-shot examples, "
         f"got {off_block_lines}"
     )
+
+
+# ---------- multi-variant helpers ----------
+
+from me80_tone_gen.generator import _evenly_spaced_temperatures
+
+
+@pytest.mark.parametrize(
+    "n,expected",
+    [
+        (1, [0.2]),
+        (2, [0.2, 0.8]),
+        (3, [0.2, 0.5, 0.8]),
+        (5, [0.2, 0.35, 0.5, 0.65, 0.8]),
+    ],
+)
+def test_evenly_spaced_temperatures(n: int, expected: list[float]) -> None:
+    result = _evenly_spaced_temperatures(n)
+    assert len(result) == n
+    for got, want in zip(result, expected, strict=True):
+        assert got == pytest.approx(want, abs=1e-9)
