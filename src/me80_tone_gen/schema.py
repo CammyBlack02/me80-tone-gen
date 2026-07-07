@@ -16,7 +16,7 @@ commit to every block produces drastically better tone choices.
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -30,6 +30,18 @@ Knob = Annotated[
         description="0-99; 50 is mid. The ME-80 hardware caps a max-position knob at 99, not 100.",
     ),
 ]
+
+
+def _knob_field(table: dict[str, tuple[str, ...]], position: int) -> Any:
+    """A required Knob field whose description says what it controls per type.
+
+    The generic slots (knob1..knob4) mean different things per effect type;
+    surfacing the per-type meaning in the JSON schema is what lets the model
+    set them deliberately instead of guessing. No default is set — every knob
+    stays required (see module docstring).
+    """
+    meanings = enums.knob_meanings_by_position(table, position)
+    return Field(description=f"Meaning by type — {meanings}. Types not listed: generic depth/amount.")
 
 
 class PreampBlock(BaseModel):
@@ -53,26 +65,26 @@ class OdDsBlock(BaseModel):
 class CompBlock(BaseModel):
     enabled: bool
     type: Literal[*enums.COMP_FX1_TYPES]  # type: ignore[valid-type]
-    knob1: Knob
-    knob2: Knob
-    knob3: Knob
+    knob1: Knob = _knob_field(enums.COMP_FX1_KNOBS, 0)
+    knob2: Knob = _knob_field(enums.COMP_FX1_KNOBS, 1)
+    knob3: Knob = _knob_field(enums.COMP_FX1_KNOBS, 2)
 
 
 class ModBlock(BaseModel):
     enabled: bool
     type: Literal[*enums.MOD_TYPES]  # type: ignore[valid-type]
-    knob1: Knob
-    knob2: Knob
-    knob3: Knob
+    knob1: Knob = _knob_field(enums.MOD_KNOBS, 0)
+    knob2: Knob = _knob_field(enums.MOD_KNOBS, 1)
+    knob3: Knob = _knob_field(enums.MOD_KNOBS, 2)
 
 
 class EqFx2Block(BaseModel):
     enabled: bool
     type: Literal[*enums.EQ_FX2_TYPES]  # type: ignore[valid-type]
-    knob1: Knob
-    knob2: Knob
-    knob3: Knob
-    knob4: Knob
+    knob1: Knob = _knob_field(enums.EQ_FX2_KNOBS, 0)
+    knob2: Knob = _knob_field(enums.EQ_FX2_KNOBS, 1)
+    knob3: Knob = _knob_field(enums.EQ_FX2_KNOBS, 2)
+    knob4: Knob = _knob_field(enums.EQ_FX2_KNOBS, 3)
 
 
 class DelayBlock(BaseModel):

@@ -139,6 +139,12 @@ def test_temperature_and_model_propagate() -> None:
         ("supporting effects",
          ["T-SCREAM", "FUZZ", "CHORUS"],
          False),
+        # Knob semantics — the generic slots must be explained per type, or
+        # the model sets knob1/2/3 blind. Sampled labels prove the generated
+        # reference block is present and wired to the enums tables.
+        ("knob semantics",
+         ["knob1=SUSTAIN", "knob1=RATE", "knob1=KEY", "knob1=BASS", "Delay TIME knob"],
+         False),
     ],
 )
 def test_system_prompt_contains(label: str, required: list[str], case_insensitive: bool) -> None:
@@ -146,6 +152,18 @@ def test_system_prompt_contains(label: str, required: list[str], case_insensitiv
     needles = [s.lower() if case_insensitive else s for s in required]
     missing = [n for n in needles if n not in haystack]
     assert not missing, f"{label}: missing {missing}"
+
+
+def test_schema_describes_generic_knobs_per_type() -> None:
+    """The JSON schema the model is constrained against must carry the
+    per-type knob meanings — that is where structured-output models read them.
+    """
+    schema = SemanticPatch.model_json_schema()
+    mod_knob1 = schema["$defs"]["ModBlock"]["properties"]["knob1"]
+    assert "RATE" in mod_knob1["description"]
+    assert "HARMONIST" in mod_knob1["description"]
+    # The description must not have turned the field optional.
+    assert "knob1" in schema["$defs"]["ModBlock"]["required"]
 
 
 def test_system_prompt_demonstrates_off_state_concretely() -> None:

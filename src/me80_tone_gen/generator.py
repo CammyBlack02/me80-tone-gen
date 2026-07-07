@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from pydantic import ValidationError
 
+from . import enums
 from .schema import SemanticPatch
 
 DEFAULT_MODEL = "qwen2.5:14b"
@@ -37,6 +38,23 @@ def evenly_spaced_temperatures(n: int) -> list[float]:
     return [_VARIANT_TEMP_LO + i * step for i in range(n)]
 
 
+def _knob_reference() -> str:
+    """Per-type knob meanings, rendered for the system prompt.
+
+    Generated from the enums tables so the prompt, the JSON schema field
+    descriptions, and the renderer can never drift apart.
+    """
+    lines = [
+        "Knob meanings for the generic-knob blocks (types not listed use "
+        "generic depth/amount knobs):"
+    ]
+    for block_name, table in enums.KNOBS_BY_BLOCK.items():
+        for type_name, labels in table.items():
+            named = ", ".join(f"knob{i + 1}={label}" for i, label in enumerate(labels))
+            lines.append(f"- {block_name} {type_name}: {named}")
+    return "\n".join(lines)
+
+
 SYSTEM_PROMPT = """\
 You are a Boss ME-80 patch designer. Convert a natural-language tone description
 into a single ME-80 patch as JSON matching the supplied schema.
@@ -57,6 +75,14 @@ How to use each block:
   everything sits at 50 is almost never the answer. Use the full 0-99 range.
 - If the description names a specific effect (e.g. "spring reverb", "tape echo",
   "chorus"), the matching block MUST be enabled with the matching type.
+
+{knob_reference}
+
+Delay TIME knob: the range-named delay types map the 0-99 TIME knob roughly
+linearly across the named millisecond range. On "100-600 ms", time=25 is about
+225 ms. Pick the type whose range contains the target time (slap-back is about
+80-140 ms; a quarter note at 120 BPM is 500 ms; long ambient trails want
+"500-6000 ms").
 
 Reference examples — learn the PATTERN of which blocks belong on/off per genre,
 not just the values. Notice that each genre has a distinctive *combination* of
@@ -134,7 +160,7 @@ Many genres are defined by what's OFF as much as what's on. Don't enable blocks
 
 Output a single JSON object matching the schema. Every block MUST appear in the
 output. No prose outside the `rationale` field.
-"""
+""".format(knob_reference=_knob_reference())
 
 
 @dataclass
