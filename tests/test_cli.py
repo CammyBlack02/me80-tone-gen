@@ -154,6 +154,40 @@ def test_variants_json_mode_emits_all(
     assert rc == 0
     out = capsys.readouterr().out
     payload = json.loads(out)
-    assert "variants" in payload
+    # Envelope mirrors the web API's /api/generate response.
     assert len(payload["variants"]) == 3
-    assert [v["patch_name"] for v in payload["variants"]] == ["V1", "V2", "V3"]
+    names = [v["patch"]["patch_name"] for v in payload["variants"]]
+    assert names == ["V1", "V2", "V3"]
+    for v in payload["variants"]:
+        assert "knob_list_text" in v
+        assert v["liveset"]["patchList"], "each variant carries its own liveset"
+    assert payload["recipe_matched_id"] is None
+
+
+def test_temp_with_variants_is_a_usage_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """--temp was silently ignored with --variants > 1; now it must refuse."""
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main([
+            "warm bluesy lead",
+            "--variants", "3",
+            "--temp", "0.7",
+            "--no-recipes",
+        ])
+    assert exc_info.value.code == 2
+    err = capsys.readouterr().err
+    assert "--temperatures" in err
+
+
+def test_missing_description_on_tty_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Usage errors exit 2, per the documented exit-code contract."""
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main([])
+    assert exc_info.value.code == 2
+    err = capsys.readouterr().err
+    assert "description" in err.lower()

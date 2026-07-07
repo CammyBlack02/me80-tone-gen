@@ -116,17 +116,3 @@ _STATIC_INDEX = files("me80_tone_gen").joinpath("static", "index.html")
 def index() -> FileResponse:
     """Serve the single-page UI."""
     return FileResponse(str(_STATIC_INDEX), media_type="text/html")
-
-
-# --- Console-script entrypoint ---
-
-def serve() -> None:
-    """Console script: `tone-gen-serve` → starts uvicorn on localhost:8765."""
-    import uvicorn
-
-    uvicorn.run(
-        "me80_tone_gen.web:app",
-        host="127.0.0.1",
-        port=8765,
-        reload=False,
-    )

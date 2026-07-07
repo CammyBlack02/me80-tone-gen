@@ -37,7 +37,7 @@ dev = ["pytest>=8", "fastapi>=0.110", "httpx>=0.27"]
 
 [project.scripts]
 tone-gen = "me80_tone_gen.cli:main"
-tone-gen-serve = "me80_tone_gen.web:serve"
+tone-gen-serve = "me80_tone_gen.serve:main"
 
 [build-system]
 requires = ["hatchling"]

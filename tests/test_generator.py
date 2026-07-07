@@ -115,6 +115,47 @@ def test_temperature_and_model_propagate() -> None:
     assert fake.calls[0]["options"]["temperature"] == 0.7
 
 
+# ---------- transport-error translation ----------
+#
+# Ollama-not-running and model-not-pulled are the two most common real-world
+# failures; both must surface as an actionable GenerationError, not a raw
+# traceback.
+
+
+class RaisingOllama:
+    def __init__(self, exc: Exception) -> None:
+        self.exc = exc
+
+    def chat(self, **kwargs: Any) -> dict[str, Any]:
+        raise self.exc
+
+
+def test_connection_error_becomes_friendly_generation_error() -> None:
+    import httpx
+
+    fake = RaisingOllama(httpx.ConnectError("connection refused"))
+    with pytest.raises(GenerationError) as exc_info:
+        generate_patch("test", client=fake, retries=0)
+    assert "Ollama server" in str(exc_info.value)
+    assert "running" in str(exc_info.value)
+
+
+def test_model_not_found_suggests_ollama_pull() -> None:
+    import ollama
+
+    fake = RaisingOllama(ollama.ResponseError('model "nope:1b" not found', 404))
+    with pytest.raises(GenerationError) as exc_info:
+        generate_patch("test", client=fake, model="nope:1b", retries=0)
+    assert "ollama pull nope:1b" in str(exc_info.value)
+
+
+def test_unrecognized_exceptions_propagate_raw() -> None:
+    """Genuine bugs must not be swallowed into a friendly wrapper."""
+    fake = RaisingOllama(KeyError("boom"))
+    with pytest.raises(KeyError):
+        generate_patch("test", client=fake, retries=0)
+
+
 # ---------- system prompt structure ----------
 #
 # These tests guard against refactor-drift in the few-shot examples — not

@@ -175,6 +175,39 @@ class GenerationError(Exception):
         return self.message
 
 
+def _as_friendly_transport_error(exc: Exception, model: str) -> GenerationError | None:
+    """Translate an Ollama transport failure into an actionable GenerationError.
+
+    The two most common real-world failures — server not running, model not
+    pulled — deserve a one-line instruction, not a traceback. Returns None for
+    anything unrecognized so genuine bugs still surface raw.
+    """
+    import httpx
+    import ollama
+
+    if isinstance(exc, ollama.ResponseError):
+        if exc.status_code == 404 or "not found" in str(exc).lower():
+            return GenerationError(
+                message=(
+                    f"Model {model!r} is not available in Ollama. "
+                    f"Pull it first: ollama pull {model}"
+                ),
+                last_error=str(exc),
+            )
+        return GenerationError(
+            message=f"Ollama returned an error: {exc}", last_error=str(exc)
+        )
+    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException, ConnectionError)):
+        return GenerationError(
+            message=(
+                "Cannot reach the Ollama server. Is it running? "
+                "Start it with `ollama serve` (or `brew services start ollama`)."
+            ),
+            last_error=str(exc),
+        )
+    return None
+
+
 def _user_prompt(description: str, recipe_seed: dict | None) -> str:
     parts = [f"Tone description: {description}"]
     if recipe_seed:
@@ -224,12 +257,18 @@ def generate_patch(
     last_raw = ""
     last_error = ""
     for attempt in range(retries + 1):
-        response = client.chat(  # type: ignore[attr-defined]
-            model=model,
-            messages=messages,
-            format=schema,
-            options={"temperature": temperature},
-        )
+        try:
+            response = client.chat(  # type: ignore[attr-defined]
+                model=model,
+                messages=messages,
+                format=schema,
+                options={"temperature": temperature},
+            )
+        except Exception as exc:
+            friendly = _as_friendly_transport_error(exc, model)
+            if friendly is None:
+                raise
+            raise friendly from exc
         last_raw = response["message"]["content"]
         try:
             return SemanticPatch.model_validate_json(last_raw)
