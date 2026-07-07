@@ -41,7 +41,9 @@ def _knob_field(table: dict[str, tuple[str, ...]], position: int) -> Any:
     stays required (see module docstring).
     """
     meanings = enums.knob_meanings_by_position(table, position)
-    return Field(description=f"Meaning by type — {meanings}. Types not listed: generic depth/amount.")
+    return Field(
+        description=f"Meaning by type — {meanings}. Types not listed: generic depth/amount."
+    )
 
 
 class PreampBlock(BaseModel):

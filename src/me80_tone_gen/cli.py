@@ -82,13 +82,18 @@ def _generate_variants_for_cli(
         try:
             temps = [float(t.strip()) for t in args.temperatures.split(",") if t.strip()]
         except ValueError:
-            raise _usage_error(f"could not parse --temperatures: {args.temperatures!r}")
+            raise _usage_error(
+                f"could not parse --temperatures: {args.temperatures!r}"
+            ) from None
         if len(temps) != args.variants:
             raise _usage_error(
                 f"--temperatures has {len(temps)} values but --variants is {args.variants}"
             )
 
-    effective_temps = temps if temps is not None else generator.evenly_spaced_temperatures(args.variants)
+    if temps is not None:
+        effective_temps = temps
+    else:
+        effective_temps = generator.evenly_spaced_temperatures(args.variants)
 
     variants = generator.generate_variants(
         description,
@@ -124,7 +129,7 @@ def _resolve_pick(args: argparse.Namespace, n: int) -> int:
     try:
         picked = int(raw)
     except ValueError:
-        raise _usage_error(f"invalid pick: {raw!r}")
+        raise _usage_error(f"invalid pick: {raw!r}") from None
     if not 1 <= picked <= n:
         raise _usage_error(f"pick out of range: {picked} (must be 1..{n})")
     return picked - 1

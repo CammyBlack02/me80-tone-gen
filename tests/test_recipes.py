@@ -158,7 +158,9 @@ def test_recipe_patches_use_valid_knob_range(recipes: list[Recipe]) -> None:
         ({"tags": ["metal", "1980s", "lead"]}, "tags", ["metal", "1980s", "lead"]),
     ],
 )
-def test_recipe_optional_field_default_or_override(override: dict, field: str, expected: object) -> None:
+def test_recipe_optional_field_default_or_override(
+    override: dict, field: str, expected: object
+) -> None:
     r = Recipe.model_validate(_minimal_recipe(**override))
     assert getattr(r, field) == expected
 
@@ -186,12 +188,15 @@ def test_packaged_recipe_tags_survive_round_trip(recipes: list[Recipe]) -> None:
 
 def _minimal_patch() -> dict:
     return {
-        "preamp": {"enabled": True, "type": "CLEAN", "gain": 50, "bass": 50, "middle": 50, "treble": 50, "level": 50},
+        "preamp": {"enabled": True, "type": "CLEAN", "gain": 50, "bass": 50,
+                   "middle": 50, "treble": 50, "level": 50},
         "od_ds": {"enabled": False, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
         "comp": {"enabled": False, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
         "mod": {"enabled": False, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
-        "eq_fx2": {"enabled": False, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
-        "delay": {"enabled": False, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "eq_fx2": {"enabled": False, "type": "EQ", "knob1": 50, "knob2": 50,
+                   "knob3": 50, "knob4": 50},
+        "delay": {"enabled": False, "type": "100-600 ms", "time": 50,
+                  "feedback": 50, "e_level": 50},
         "reverb": {"enabled": False, "type": "ROOM", "level": 50},
         "pedal_fx": {"enabled": False, "type": "WAH"},
     }

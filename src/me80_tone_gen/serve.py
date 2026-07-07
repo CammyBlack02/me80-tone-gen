@@ -23,7 +23,7 @@ def main() -> None:
             "Install them with: pip install 'me80-tone-gen[web]'",
             file=sys.stderr,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from None
 
     uvicorn.run(
         "me80_tone_gen.web:app",

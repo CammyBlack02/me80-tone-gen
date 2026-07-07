@@ -55,14 +55,15 @@ def _knob_reference() -> str:
     return "\n".join(lines)
 
 
-SYSTEM_PROMPT = """\
+SYSTEM_PROMPT = f"""\
 You are a Boss ME-80 patch designer. Convert a natural-language tone description
 into a single ME-80 patch as JSON matching the supplied schema.
 
 Hard constraints:
 - Choose ONLY from the legal type names supplied in the schema's enum fields.
 - Knob values are integers 0-99. 0 = minimum, 99 = maximum (50 is mid).
-- The ME-80's signal chain (fixed): PEDAL FX → COMP/FX1 → OD/DS → PREAMP → MOD → EQ/FX2 → DELAY → REVERB.
+- The ME-80's signal chain (fixed): PEDAL FX → COMP/FX1 → OD/DS → PREAMP → MOD →
+  EQ/FX2 → DELAY → REVERB.
 - Preamp is always on (enabled=true).
 - patch_name: max 16 ASCII chars, uppercase, descriptive (e.g. "BLUES LEAD", "PUPPETS RHYTHM").
 
@@ -76,7 +77,7 @@ How to use each block:
 - If the description names a specific effect (e.g. "spring reverb", "tape echo",
   "chorus"), the matching block MUST be enabled with the matching type.
 
-{knob_reference}
+{_knob_reference()}
 
 Delay TIME knob: the range-named delay types map the 0-99 TIME knob roughly
 linearly across the named millisecond range. On "100-600 ms", time=25 is about
@@ -160,7 +161,7 @@ Many genres are defined by what's OFF as much as what's on. Don't enable blocks
 
 Output a single JSON object matching the schema. Every block MUST appear in the
 output. No prose outside the `rationale` field.
-""".format(knob_reference=_knob_reference())
+"""
 
 
 @dataclass
@@ -237,7 +238,7 @@ def generate_patch(
     temperature: float = DEFAULT_TEMPERATURE,
     retries: int = DEFAULT_RETRIES,
     recipe_seed: dict | None = None,
-    client: "object | None" = None,
+    client: object | None = None,
 ) -> SemanticPatch:
     """Generate one SemanticPatch from a tone description.
 
@@ -256,7 +257,7 @@ def generate_patch(
 
     last_raw = ""
     last_error = ""
-    for attempt in range(retries + 1):
+    for _ in range(retries + 1):
         try:
             response = client.chat(  # type: ignore[attr-defined]
                 model=model,
@@ -298,7 +299,7 @@ def generate_variants(
     model: str = DEFAULT_MODEL,
     retries: int = DEFAULT_RETRIES,
     recipe_seed: dict | None = None,
-    client: "object | None" = None,
+    client: object | None = None,
 ) -> list[SemanticPatch]:
     """Generate N patches in parallel with per-variant temperature.
 
