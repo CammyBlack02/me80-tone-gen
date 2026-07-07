@@ -46,6 +46,74 @@ PEDAL_FX_TYPES: tuple[str, ...] = (
 )
 
 
+# Per-type knob meanings for the generic-knob blocks. The stored params are
+# nameless slots (comp1..3, mod1..3, fx2_1..4), but the hardware assigns each
+# type its own knob functions — without these the LLM (and the human reading a
+# dial-in card) is setting knobs blind.
+#
+# Labels use standard BOSS parameter names (owner's manual parameter chart /
+# BTS labels). Types absent from a table fall back to generic "knob N"
+# everywhere — only add an entry once the labels are verified against spec
+# §3.3 or the owner's manual; a wrong label is worse than none. Currently
+# unverified and therefore omitted: OCTAVE, Single>Hum, Hum>Single, SOLO
+# (COMP/FX1); VIBRATO, OVERTONE (MOD); everything but EQ (EQ/FX2).
+
+COMP_FX1_KNOBS: dict[str, tuple[str, ...]] = {
+    "COMP": ("SUSTAIN", "ATTACK", "LEVEL"),
+    "T.WAH UP": ("SENS", "PEAK", "LEVEL"),
+    "T.WAH DOWN": ("SENS", "PEAK", "LEVEL"),
+    "SLOW GEAR": ("SENS", "RISE TIME", "LEVEL"),
+    "DEFRETTER": ("SENS", "TONE", "LEVEL"),
+    "RING MOD": ("FREQ", "E.LEVEL", "D.LEVEL"),
+    "AC SIM": ("TOP", "BODY", "LEVEL"),
+}
+
+MOD_KNOBS: dict[str, tuple[str, ...]] = {
+    "PHASER": ("RATE", "DEPTH", "RESONANCE"),
+    "FLANGER": ("RATE", "DEPTH", "RESONANCE"),
+    "TREMOLO": ("RATE", "DEPTH", "WAVE"),
+    "CHORUS": ("RATE", "DEPTH", "E.LEVEL"),
+    "PITCH SHIFT": ("PITCH", "D.LEVEL", "E.LEVEL"),
+    "HARMONIST": ("KEY", "HARMONY", "E.LEVEL"),
+    "ROTARY": ("RATE", "DEPTH", "E.LEVEL"),
+    "UNI-V": ("RATE", "DEPTH", "E.LEVEL"),
+    "DELAY": ("TIME", "FEEDBACK", "E.LEVEL"),
+}
+
+EQ_FX2_KNOBS: dict[str, tuple[str, ...]] = {
+    "EQ": ("BASS", "MIDDLE", "TREBLE", "LEVEL"),
+}
+
+KNOBS_BY_BLOCK: dict[str, dict[str, tuple[str, ...]]] = {
+    "COMP/FX1": COMP_FX1_KNOBS,
+    "MOD": MOD_KNOBS,
+    "EQ/FX2": EQ_FX2_KNOBS,
+}
+
+
+def knob_labels(table: dict[str, tuple[str, ...]], type_name: str, n_knobs: int) -> tuple[str, ...]:
+    """Knob labels for a type, falling back to generic names when unknown."""
+    labels = table.get(type_name.strip().upper() if type_name else "")
+    if labels is not None:
+        return labels
+    return tuple(f"knob{i + 1}" for i in range(n_knobs))
+
+
+def knob_meanings_by_position(table: dict[str, tuple[str, ...]], position: int) -> str:
+    """One-line summary of what knob `position` (0-indexed) means per type.
+
+    Groups types sharing a label: "RATE (PHASER, FLANGER, ...); KEY (HARMONIST)".
+    Used in the LLM schema field descriptions so the model knows what it is
+    setting.
+    """
+    groups: dict[str, list[str]] = {}
+    for type_name, labels in table.items():
+        if position < len(labels):
+            groups.setdefault(labels[position], []).append(type_name)
+    parts = [f"{label} ({', '.join(types)})" for label, types in groups.items()]
+    return "; ".join(parts)
+
+
 # Lookup helpers — name (case-insensitive, whitespace-tolerant) -> index string.
 def _index_lookup(values: tuple[str, ...]) -> dict[str, str]:
     return {v.upper(): str(i) for i, v in enumerate(values)}

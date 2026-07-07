@@ -19,12 +19,18 @@ from .schema import SemanticPatch
 from .writer import build_liveset, liveset_to_json, write_tsl
 
 
+def _usage_error(message: str) -> SystemExit:
+    """Print a usage error and exit 2 (the documented usage-error code)."""
+    print(f"error: {message}", file=sys.stderr)
+    return SystemExit(2)
+
+
 def _read_description(args: argparse.Namespace) -> str:
     if args.description and args.description != "-":
         return args.description
     if not sys.stdin.isatty():
         return sys.stdin.read().strip()
-    raise SystemExit("error: provide a description as an argument or via stdin")
+    raise _usage_error("provide a description as an argument or via stdin")
 
 
 def _read_batch(path: Path) -> list[str]:
@@ -34,7 +40,7 @@ def _read_batch(path: Path) -> list[str]:
         if ln.strip() and not ln.lstrip().startswith("#")
     ]
     if not lines:
-        raise SystemExit(f"error: batch file {path} contains no descriptions")
+        raise _usage_error(f"batch file {path} contains no descriptions")
     return lines
 
 
@@ -48,7 +54,7 @@ def _generate_one(
     patch = generator.generate_patch(
         description,
         model=args.model,
-        temperature=args.temp,
+        temperature=args.temp if args.temp is not None else DEFAULT_TEMPERATURE,
         retries=args.retries,
         recipe_seed=seed,
     )
@@ -76,19 +82,18 @@ def _generate_variants_for_cli(
         try:
             temps = [float(t.strip()) for t in args.temperatures.split(",") if t.strip()]
         except ValueError:
-            print(
-                f"error: could not parse --temperatures: {args.temperatures!r}",
-                file=sys.stderr,
-            )
-            raise SystemExit(2)
+            raise _usage_error(
+                f"could not parse --temperatures: {args.temperatures!r}"
+            ) from None
         if len(temps) != args.variants:
-            print(
-                f"error: --temperatures has {len(temps)} values but --variants is {args.variants}",
-                file=sys.stderr,
+            raise _usage_error(
+                f"--temperatures has {len(temps)} values but --variants is {args.variants}"
             )
-            raise SystemExit(2)
 
-    effective_temps = temps if temps is not None else generator.evenly_spaced_temperatures(args.variants)
+    if temps is not None:
+        effective_temps = temps
+    else:
+        effective_temps = generator.evenly_spaced_temperatures(args.variants)
 
     variants = generator.generate_variants(
         description,
@@ -105,8 +110,7 @@ def _resolve_pick(args: argparse.Namespace, n: int) -> int:
     """Return the 0-indexed picked variant. Prompts on TTY, otherwise uses --pick or 0."""
     if args.pick is not None:
         if not 1 <= args.pick <= n:
-            print(f"error: --pick must be 1..{n}, got {args.pick}", file=sys.stderr)
-            raise SystemExit(2)
+            raise _usage_error(f"--pick must be 1..{n}, got {args.pick}")
         return args.pick - 1
 
     if not sys.stdin.isatty():
@@ -125,11 +129,9 @@ def _resolve_pick(args: argparse.Namespace, n: int) -> int:
     try:
         picked = int(raw)
     except ValueError:
-        print(f"error: invalid pick: {raw!r}", file=sys.stderr)
-        raise SystemExit(2)
+        raise _usage_error(f"invalid pick: {raw!r}") from None
     if not 1 <= picked <= n:
-        print(f"error: pick out of range: {picked} (must be 1..{n})", file=sys.stderr)
-        raise SystemExit(2)
+        raise _usage_error(f"pick out of range: {picked} (must be 1..{n})")
     return picked - 1
 
 
@@ -158,15 +160,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--json", action="store_true",
-        help="Emit the semantic patch (or liveset) as JSON to stdout; no knob-list.",
+        help=(
+            "Emit JSON to stdout instead of a knob list. Single/batch mode "
+            "prints the liveset itself (valid .tsl content); --variants > 1 "
+            "prints the same envelope as the web API's /api/generate."
+        ),
     )
     parser.add_argument(
         "--model", default=DEFAULT_MODEL,
         help=f"Ollama model id (default: {DEFAULT_MODEL}).",
     )
     parser.add_argument(
-        "--temp", type=float, default=DEFAULT_TEMPERATURE,
-        help=f"Sampling temperature (default: {DEFAULT_TEMPERATURE}).",
+        "--temp", type=float, default=None,
+        help=(
+            f"Sampling temperature (default: {DEFAULT_TEMPERATURE}). "
+            "Not valid with --variants > 1; use --temperatures there."
+        ),
     )
     parser.add_argument(
         "--retries", type=int, default=2,
@@ -196,12 +205,18 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.batch and args.variants > 1:
-        print("error: --batch and --variants are mutually exclusive", file=sys.stderr)
-        raise SystemExit(2)
+        raise _usage_error("--batch and --variants are mutually exclusive")
 
     if args.variants < 1:
-        print("error: --variants must be >= 1", file=sys.stderr)
-        raise SystemExit(2)
+        raise _usage_error("--variants must be >= 1")
+
+    if args.temp is not None and args.variants > 1:
+        # Silently ignoring --temp here was a real trap: variants use their
+        # own per-variant spread, so an explicit --temp did nothing.
+        raise _usage_error(
+            "--temp does not apply when --variants > 1; "
+            "use --temperatures for per-variant control"
+        )
 
     recipes = [] if args.no_recipes else load_recipes(args.recipes)
     liveset_name = _liveset_name_from(args)
@@ -217,7 +232,21 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         if args.json:
-            payload = {"variants": [v.model_dump() for v in variants]}
+            # Same envelope as the web API's /api/generate response, so
+            # scripts can consume either interface with one parser.
+            variant_payloads = []
+            for v in variants:
+                liveset = build_liveset([v], liveset_name)
+                variant_payloads.append({
+                    "patch": v.model_dump(),
+                    "knob_list_text": render_knob_list(liveset["patchList"][0]),
+                    "liveset": liveset,
+                })
+            payload = {
+                "variants": variant_payloads,
+                "recipe_matched_id": recipe.id if recipe else None,
+                "recipe_matched_description": recipe.description if recipe else None,
+            }
             print(json.dumps(payload, indent=2))
             return 0
 

@@ -53,6 +53,66 @@ def test_matcher_is_case_insensitive(recipes: list[Recipe]) -> None:
     assert r.id == "master-of-puppets-rhythm"
 
 
+def test_matcher_requires_word_boundaries() -> None:
+    """Short aliases must not match inside unrelated words.
+
+    Regression: with bare substring matching, "nin" (Nine Inch Nails) matched
+    inside "evening" and "morning", sending gentle clean descriptions to an
+    industrial-distortion seed.
+    """
+    nin = Recipe.model_validate(_minimal_recipe(id="nin", aliases=["nin", "creep"]))
+    book = [nin]
+    assert match_recipe("warm evening clean tone", book) is None
+    assert match_recipe("gentle morning acoustic vibe", book) is None
+    assert match_recipe("creepy ambient horror tone", book) is None
+    assert match_recipe("nin style industrial tone", book) is nin
+
+
+def test_matcher_boundary_handles_punctuated_aliases() -> None:
+    """Aliases that start or end with non-word characters still match."""
+    acdc = Recipe.model_validate(_minimal_recipe(id="acdc", aliases=["ac/dc"]))
+    bb = Recipe.model_validate(_minimal_recipe(id="bb", aliases=["b.b. king"]))
+    assert match_recipe("ac/dc style rhythm", [acdc]) is acdc
+    assert match_recipe("smooth b.b. king lead", [bb]) is bb
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "warm evening clean tone",
+        "gentle morning acoustic vibe",
+        "a tone that would suit soft dinner music",
+        "creepy ambient horror soundtrack tone",
+        "make it sound alive and open",
+        "plush warm clean tone",
+        "bright sparkly clean with a touch of delay",
+        "dark heavy detuned wall of distortion",
+    ],
+)
+def test_innocent_descriptions_hit_no_artist_recipe(
+    recipes: list[Recipe], description: str
+) -> None:
+    """Generic descriptions must not be routed to a specific artist/song seed.
+
+    A genre fallback recipe (id ending in "-fallback") is acceptable; an artist
+    or song recipe is not — its seed would override the user's description.
+    """
+    r = match_recipe(description, recipes)
+    assert r is None or r.id.endswith("-fallback"), (
+        f"{description!r} matched {r.id}"
+    )
+
+
+def test_aliases_unique_across_recipes(recipes: list[Recipe]) -> None:
+    """A duplicated alias would make routing depend on recipe order."""
+    seen: dict[str, str] = {}
+    for r in recipes:
+        for a in r.aliases:
+            key = a.lower()
+            assert key not in seen, f"alias {a!r} in both {seen[key]} and {r.id}"
+            seen[key] = r.id
+
+
 def test_matcher_prefers_more_specific_alias_on_tie() -> None:
     """When two recipes match, the one with the longer matching alias wins."""
     short = Recipe.model_validate(_minimal_recipe(id="short-match", aliases=["rock"]))
@@ -98,7 +158,9 @@ def test_recipe_patches_use_valid_knob_range(recipes: list[Recipe]) -> None:
         ({"tags": ["metal", "1980s", "lead"]}, "tags", ["metal", "1980s", "lead"]),
     ],
 )
-def test_recipe_optional_field_default_or_override(override: dict, field: str, expected: object) -> None:
+def test_recipe_optional_field_default_or_override(
+    override: dict, field: str, expected: object
+) -> None:
     r = Recipe.model_validate(_minimal_recipe(**override))
     assert getattr(r, field) == expected
 
@@ -126,12 +188,15 @@ def test_packaged_recipe_tags_survive_round_trip(recipes: list[Recipe]) -> None:
 
 def _minimal_patch() -> dict:
     return {
-        "preamp": {"enabled": True, "type": "CLEAN", "gain": 50, "bass": 50, "middle": 50, "treble": 50, "level": 50},
+        "preamp": {"enabled": True, "type": "CLEAN", "gain": 50, "bass": 50,
+                   "middle": 50, "treble": 50, "level": 50},
         "od_ds": {"enabled": False, "type": "OVERDRIVE", "drive": 50, "tone": 50, "level": 50},
         "comp": {"enabled": False, "type": "COMP", "knob1": 50, "knob2": 50, "knob3": 50},
         "mod": {"enabled": False, "type": "CHORUS", "knob1": 50, "knob2": 50, "knob3": 50},
-        "eq_fx2": {"enabled": False, "type": "EQ", "knob1": 50, "knob2": 50, "knob3": 50, "knob4": 50},
-        "delay": {"enabled": False, "type": "100-600 ms", "time": 50, "feedback": 50, "e_level": 50},
+        "eq_fx2": {"enabled": False, "type": "EQ", "knob1": 50, "knob2": 50,
+                   "knob3": 50, "knob4": 50},
+        "delay": {"enabled": False, "type": "100-600 ms", "time": 50,
+                  "feedback": 50, "e_level": 50},
         "reverb": {"enabled": False, "type": "ROOM", "level": 50},
         "pedal_fx": {"enabled": False, "type": "WAH"},
     }

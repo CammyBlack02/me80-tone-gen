@@ -134,11 +134,19 @@ Substring matching, case-insensitive. Longer matched aliases beat shorter ones, 
 
 ```bash
 pip install -e '.[dev]'
-pytest                          # 34 tests
+pytest                          # unit tests (no Ollama needed)
+ruff check src tests scripts   # lint (also run in CI)
 ./scripts/fetch_reference.sh    # downloads Contra_1.tsl for full conformance tests
 ```
 
-Tests anchored against a real BTS export will skip cleanly if the reference file isn't present — 25 of 34 still run without it.
+Tests anchored against a real BTS export will skip cleanly if the reference file isn't present.
+
+To measure generation quality (needs Ollama running), run the structural eval suite — it scores pass-rates for guitarist-agreeable assertions ("djent leaves delay off", "surf uses spring reverb") across repeated runs, so prompt or model changes become measurable instead of vibes:
+
+```bash
+python scripts/run_eval.py                        # full suite, 3 runs per case
+python scripts/run_eval.py --no-recipes --out b.json   # A/B the raw prompt
+```
 
 ## License
 

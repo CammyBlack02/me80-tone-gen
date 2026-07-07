@@ -850,7 +850,7 @@
     },
     {
       "id": "pearl-jam-rhythm",
-      "aliases": ["pearl jam", "mike mccready", "stone gossard", "alive", "even flow", "pearl jam rhythm"],
+      "aliases": ["pearl jam", "mike mccready", "stone gossard", "even flow", "pearl jam rhythm"],
       "tags": ["modern-rock", "grunge", "1990s", "pearl-jam", "rhythm"],
       "description": "Pearl Jam mid-gain rhythm — Marshall-flavored with a touch of breakup, mids forward, light room. Not as dark as Soundgarden, not as ragged as Nirvana.",
       "patch": {
@@ -866,7 +866,7 @@
     },
     {
       "id": "alice-in-chains-rhythm",
-      "aliases": ["alice in chains", "jerry cantrell", "would", "man in the box", "aic rhythm"],
+      "aliases": ["alice in chains", "jerry cantrell", "man in the box", "aic rhythm"],
       "tags": ["modern-rock", "grunge", "1990s", "alice-in-chains", "cantrell", "rhythm"],
       "description": "Jerry Cantrell dark mid-heavy grunge — Bogner / Soldano pushed, scooped slightly, drop tuned weight. Light room reverb, no modulation.",
       "patch": {
@@ -914,7 +914,7 @@
     },
     {
       "id": "stone-temple-pilots",
-      "aliases": ["stone temple pilots", "stp", "dean deleo", "plush", "interstate love song"],
+      "aliases": ["stone temple pilots", "stp", "dean deleo", "interstate love song"],
       "tags": ["modern-rock", "grunge", "1990s", "stone-temple-pilots", "rhythm"],
       "description": "Dean DeLeo big rock rhythm — Marshall pushed with a slight overdrive boost, mids forward, bright but rounded. Light room reverb.",
       "patch": {

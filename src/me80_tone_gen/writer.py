@@ -26,9 +26,14 @@ def encode_name(name: str) -> tuple[dict[str, str], str]:
     AND as a 16-char `patchname` string AND as the patch-level `name` field. All
     three must agree, so we compute them together.
 
+    Non-printable-ASCII characters are replaced with spaces: the codes must be
+    displayable on the pedal, and the schema's pattern constraint may be
+    bypassed when callers build params without going through SemanticPatch.
+
     Returns: (name1..name16 mapping, 16-char space-padded string).
     """
-    padded = name[:16].ljust(16)
+    sanitized = "".join(c if " " <= c <= "~" else " " for c in name)
+    padded = sanitized[:16].ljust(16)
     codes = {f"name{i + 1}": str(ord(c)) for i, c in enumerate(padded)}
     return codes, padded
 

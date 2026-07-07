@@ -115,6 +115,47 @@ def test_temperature_and_model_propagate() -> None:
     assert fake.calls[0]["options"]["temperature"] == 0.7
 
 
+# ---------- transport-error translation ----------
+#
+# Ollama-not-running and model-not-pulled are the two most common real-world
+# failures; both must surface as an actionable GenerationError, not a raw
+# traceback.
+
+
+class RaisingOllama:
+    def __init__(self, exc: Exception) -> None:
+        self.exc = exc
+
+    def chat(self, **kwargs: Any) -> dict[str, Any]:
+        raise self.exc
+
+
+def test_connection_error_becomes_friendly_generation_error() -> None:
+    import httpx
+
+    fake = RaisingOllama(httpx.ConnectError("connection refused"))
+    with pytest.raises(GenerationError) as exc_info:
+        generate_patch("test", client=fake, retries=0)
+    assert "Ollama server" in str(exc_info.value)
+    assert "running" in str(exc_info.value)
+
+
+def test_model_not_found_suggests_ollama_pull() -> None:
+    import ollama
+
+    fake = RaisingOllama(ollama.ResponseError('model "nope:1b" not found', 404))
+    with pytest.raises(GenerationError) as exc_info:
+        generate_patch("test", client=fake, model="nope:1b", retries=0)
+    assert "ollama pull nope:1b" in str(exc_info.value)
+
+
+def test_unrecognized_exceptions_propagate_raw() -> None:
+    """Genuine bugs must not be swallowed into a friendly wrapper."""
+    fake = RaisingOllama(KeyError("boom"))
+    with pytest.raises(KeyError):
+        generate_patch("test", client=fake, retries=0)
+
+
 # ---------- system prompt structure ----------
 #
 # These tests guard against refactor-drift in the few-shot examples — not
@@ -139,6 +180,12 @@ def test_temperature_and_model_propagate() -> None:
         ("supporting effects",
          ["T-SCREAM", "FUZZ", "CHORUS"],
          False),
+        # Knob semantics — the generic slots must be explained per type, or
+        # the model sets knob1/2/3 blind. Sampled labels prove the generated
+        # reference block is present and wired to the enums tables.
+        ("knob semantics",
+         ["knob1=SUSTAIN", "knob1=RATE", "knob1=KEY", "knob1=BASS", "Delay TIME knob"],
+         False),
     ],
 )
 def test_system_prompt_contains(label: str, required: list[str], case_insensitive: bool) -> None:
@@ -146,6 +193,18 @@ def test_system_prompt_contains(label: str, required: list[str], case_insensitiv
     needles = [s.lower() if case_insensitive else s for s in required]
     missing = [n for n in needles if n not in haystack]
     assert not missing, f"{label}: missing {missing}"
+
+
+def test_schema_describes_generic_knobs_per_type() -> None:
+    """The JSON schema the model is constrained against must carry the
+    per-type knob meanings — that is where structured-output models read them.
+    """
+    schema = SemanticPatch.model_json_schema()
+    mod_knob1 = schema["$defs"]["ModBlock"]["properties"]["knob1"]
+    assert "RATE" in mod_knob1["description"]
+    assert "HARMONIST" in mod_knob1["description"]
+    # The description must not have turned the field optional.
+    assert "knob1" in schema["$defs"]["ModBlock"]["required"]
 
 
 def test_system_prompt_demonstrates_off_state_concretely() -> None:

@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from pydantic import ValidationError
 
+from . import enums
 from .schema import SemanticPatch
 
 DEFAULT_MODEL = "qwen2.5:14b"
@@ -37,14 +38,32 @@ def evenly_spaced_temperatures(n: int) -> list[float]:
     return [_VARIANT_TEMP_LO + i * step for i in range(n)]
 
 
-SYSTEM_PROMPT = """\
+def _knob_reference() -> str:
+    """Per-type knob meanings, rendered for the system prompt.
+
+    Generated from the enums tables so the prompt, the JSON schema field
+    descriptions, and the renderer can never drift apart.
+    """
+    lines = [
+        "Knob meanings for the generic-knob blocks (types not listed use "
+        "generic depth/amount knobs):"
+    ]
+    for block_name, table in enums.KNOBS_BY_BLOCK.items():
+        for type_name, labels in table.items():
+            named = ", ".join(f"knob{i + 1}={label}" for i, label in enumerate(labels))
+            lines.append(f"- {block_name} {type_name}: {named}")
+    return "\n".join(lines)
+
+
+SYSTEM_PROMPT = f"""\
 You are a Boss ME-80 patch designer. Convert a natural-language tone description
 into a single ME-80 patch as JSON matching the supplied schema.
 
 Hard constraints:
 - Choose ONLY from the legal type names supplied in the schema's enum fields.
 - Knob values are integers 0-99. 0 = minimum, 99 = maximum (50 is mid).
-- The ME-80's signal chain (fixed): PEDAL FX → COMP/FX1 → OD/DS → PREAMP → MOD → EQ/FX2 → DELAY → REVERB.
+- The ME-80's signal chain (fixed): PEDAL FX → COMP/FX1 → OD/DS → PREAMP → MOD →
+  EQ/FX2 → DELAY → REVERB.
 - Preamp is always on (enabled=true).
 - patch_name: max 16 ASCII chars, uppercase, descriptive (e.g. "BLUES LEAD", "PUPPETS RHYTHM").
 
@@ -57,6 +76,14 @@ How to use each block:
   everything sits at 50 is almost never the answer. Use the full 0-99 range.
 - If the description names a specific effect (e.g. "spring reverb", "tape echo",
   "chorus"), the matching block MUST be enabled with the matching type.
+
+{_knob_reference()}
+
+Delay TIME knob: the range-named delay types map the 0-99 TIME knob roughly
+linearly across the named millisecond range. On "100-600 ms", time=25 is about
+225 ms. Pick the type whose range contains the target time (slap-back is about
+80-140 ms; a quarter note at 120 BPM is 500 ms; long ambient trails want
+"500-6000 ms").
 
 Reference examples — learn the PATTERN of which blocks belong on/off per genre,
 not just the values. Notice that each genre has a distinctive *combination* of
@@ -149,6 +176,39 @@ class GenerationError(Exception):
         return self.message
 
 
+def _as_friendly_transport_error(exc: Exception, model: str) -> GenerationError | None:
+    """Translate an Ollama transport failure into an actionable GenerationError.
+
+    The two most common real-world failures — server not running, model not
+    pulled — deserve a one-line instruction, not a traceback. Returns None for
+    anything unrecognized so genuine bugs still surface raw.
+    """
+    import httpx
+    import ollama
+
+    if isinstance(exc, ollama.ResponseError):
+        if exc.status_code == 404 or "not found" in str(exc).lower():
+            return GenerationError(
+                message=(
+                    f"Model {model!r} is not available in Ollama. "
+                    f"Pull it first: ollama pull {model}"
+                ),
+                last_error=str(exc),
+            )
+        return GenerationError(
+            message=f"Ollama returned an error: {exc}", last_error=str(exc)
+        )
+    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException, ConnectionError)):
+        return GenerationError(
+            message=(
+                "Cannot reach the Ollama server. Is it running? "
+                "Start it with `ollama serve` (or `brew services start ollama`)."
+            ),
+            last_error=str(exc),
+        )
+    return None
+
+
 def _user_prompt(description: str, recipe_seed: dict | None) -> str:
     parts = [f"Tone description: {description}"]
     if recipe_seed:
@@ -178,7 +238,7 @@ def generate_patch(
     temperature: float = DEFAULT_TEMPERATURE,
     retries: int = DEFAULT_RETRIES,
     recipe_seed: dict | None = None,
-    client: "object | None" = None,
+    client: object | None = None,
 ) -> SemanticPatch:
     """Generate one SemanticPatch from a tone description.
 
@@ -197,13 +257,19 @@ def generate_patch(
 
     last_raw = ""
     last_error = ""
-    for attempt in range(retries + 1):
-        response = client.chat(  # type: ignore[attr-defined]
-            model=model,
-            messages=messages,
-            format=schema,
-            options={"temperature": temperature},
-        )
+    for _ in range(retries + 1):
+        try:
+            response = client.chat(  # type: ignore[attr-defined]
+                model=model,
+                messages=messages,
+                format=schema,
+                options={"temperature": temperature},
+            )
+        except Exception as exc:
+            friendly = _as_friendly_transport_error(exc, model)
+            if friendly is None:
+                raise
+            raise friendly from exc
         last_raw = response["message"]["content"]
         try:
             return SemanticPatch.model_validate_json(last_raw)
@@ -233,7 +299,7 @@ def generate_variants(
     model: str = DEFAULT_MODEL,
     retries: int = DEFAULT_RETRIES,
     recipe_seed: dict | None = None,
-    client: "object | None" = None,
+    client: object | None = None,
 ) -> list[SemanticPatch]:
     """Generate N patches in parallel with per-variant temperature.
 
