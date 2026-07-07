@@ -1,0 +1,129 @@
+{
+  "_comment": [
+    "Structural eval cases for scripts/run_eval.py. Each case is a description",
+    "plus assertions a guitarist would agree on: which blocks are on/off, which",
+    "types are chosen, coarse knob bounds. Deliberately NOT exact knob values —",
+    "those are taste; these are correctness. Ops: equals, in, lte, gte.",
+    "Generation is stochastic, so the harness scores pass-rate over N runs",
+    "rather than pass/fail. Keep every assertion defensible: if two competent",
+    "guitarists could disagree, it does not belong here."
+  ],
+  "cases": [
+    {
+      "id": "djent-dry-tight",
+      "description": "djent rhythm tone",
+      "expect": [
+        {"path": "preamp.type", "op": "equals", "value": "METAL"},
+        {"path": "od_ds.enabled", "op": "equals", "value": true},
+        {"path": "od_ds.type", "op": "equals", "value": "T-SCREAM"},
+        {"path": "delay.enabled", "op": "equals", "value": false},
+        {"path": "reverb.level", "op": "lte", "value": 35}
+      ]
+    },
+    {
+      "id": "country-slapback",
+      "description": "country twang lead",
+      "expect": [
+        {"path": "preamp.type", "op": "in", "value": ["CLEAN", "TWEED"]},
+        {"path": "comp.enabled", "op": "equals", "value": true},
+        {"path": "comp.type", "op": "equals", "value": "COMP"},
+        {"path": "delay.enabled", "op": "equals", "value": true},
+        {"path": "delay.time", "op": "lte", "value": 40}
+      ]
+    },
+    {
+      "id": "surf-spring",
+      "description": "vintage surf rock tone",
+      "expect": [
+        {"path": "reverb.enabled", "op": "equals", "value": true},
+        {"path": "reverb.type", "op": "equals", "value": "SPRING"},
+        {"path": "reverb.level", "op": "gte", "value": 40},
+        {"path": "od_ds.enabled", "op": "equals", "value": false}
+      ]
+    },
+    {
+      "id": "shoegaze-stack",
+      "description": "shoegaze wall of sound",
+      "expect": [
+        {"path": "mod.enabled", "op": "equals", "value": true},
+        {"path": "delay.enabled", "op": "equals", "value": true},
+        {"path": "reverb.enabled", "op": "equals", "value": true},
+        {"path": "reverb.type", "op": "equals", "value": "HALL"},
+        {"path": "reverb.level", "op": "gte", "value": 60}
+      ]
+    },
+    {
+      "id": "funk-squash",
+      "description": "tight funk clean rhythm",
+      "expect": [
+        {"path": "preamp.type", "op": "equals", "value": "CLEAN"},
+        {"path": "comp.enabled", "op": "equals", "value": true},
+        {"path": "od_ds.enabled", "op": "equals", "value": false},
+        {"path": "delay.enabled", "op": "equals", "value": false}
+      ]
+    },
+    {
+      "id": "jazz-dark-clean",
+      "description": "warm mellow jazz clean tone",
+      "expect": [
+        {"path": "preamp.type", "op": "equals", "value": "CLEAN"},
+        {"path": "preamp.gain", "op": "lte", "value": 40},
+        {"path": "od_ds.enabled", "op": "equals", "value": false},
+        {"path": "reverb.level", "op": "lte", "value": 45}
+      ]
+    },
+    {
+      "id": "generic-metal-gain",
+      "description": "modern high gain metal rhythm",
+      "expect": [
+        {"path": "preamp.type", "op": "in", "value": ["METAL", "STACK"]},
+        {"path": "preamp.gain", "op": "gte", "value": 60}
+      ]
+    },
+    {
+      "id": "explicit-spring-reverb",
+      "description": "warm bluesy lead with spring reverb",
+      "expect": [
+        {"path": "reverb.enabled", "op": "equals", "value": true},
+        {"path": "reverb.type", "op": "equals", "value": "SPRING"}
+      ]
+    },
+    {
+      "id": "explicit-tape-echo",
+      "description": "rockabilly lead with tape echo",
+      "expect": [
+        {"path": "delay.enabled", "op": "equals", "value": true},
+        {"path": "delay.type", "op": "equals", "value": "TAPE"}
+      ]
+    },
+    {
+      "id": "dry-punk",
+      "description": "raw dry punk rock rhythm, no ambience at all",
+      "expect": [
+        {"path": "delay.enabled", "op": "equals", "value": false},
+        {"path": "mod.enabled", "op": "equals", "value": false},
+        {"path": "reverb.level", "op": "lte", "value": 25}
+      ]
+    },
+    {
+      "id": "post-rock-swell",
+      "description": "ambient post-rock crescendo swell",
+      "expect": [
+        {"path": "preamp.type", "op": "equals", "value": "CLEAN"},
+        {"path": "delay.enabled", "op": "equals", "value": true},
+        {"path": "delay.time", "op": "gte", "value": 55},
+        {"path": "reverb.type", "op": "equals", "value": "HALL"},
+        {"path": "reverb.level", "op": "gte", "value": 55}
+      ]
+    },
+    {
+      "id": "chorus-named",
+      "description": "80s clean ballad with lush chorus",
+      "expect": [
+        {"path": "mod.enabled", "op": "equals", "value": true},
+        {"path": "mod.type", "op": "equals", "value": "CHORUS"},
+        {"path": "preamp.type", "op": "equals", "value": "CLEAN"}
+      ]
+    }
+  ]
+}
