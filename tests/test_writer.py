@@ -165,6 +165,25 @@ def test_encode_name_truncates_long_name() -> None:
     assert len(padded) == 16
 
 
+def test_encode_name_replaces_non_ascii_with_space() -> None:
+    """The pedal stores per-character ASCII codes; anything outside the
+    printable range must never reach the codes dict."""
+    codes, padded = encode_name("CAFÉ TONE")
+    assert padded.startswith("CAF  TONE")
+    assert all(32 <= int(v) <= 126 for v in codes.values())
+
+
+def test_semantic_patch_rejects_non_ascii_name() -> None:
+    """First line of defense: the schema constrains the model to printable
+    ASCII, so a bad name is a validation retry, not a broken export."""
+    from pydantic import ValidationError
+
+    from tests.conftest import valid_patch
+
+    with pytest.raises(ValidationError):
+        valid_patch(patch_name="CAFÉ TONE")
+
+
 # ---------- semantic mapping ----------
 
 

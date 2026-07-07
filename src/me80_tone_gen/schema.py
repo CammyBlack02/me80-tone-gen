@@ -109,7 +109,9 @@ class PedalFxBlock(BaseModel):
 class SemanticPatch(BaseModel):
     """The LLM's output. Translates to ME-80 params via writer.semantic_to_params."""
 
-    patch_name: Annotated[str, Field(min_length=1, max_length=16)]
+    # Printable ASCII only: the name is stored as per-character ASCII codes
+    # (name1..16) and the pedal's display has no wider charset.
+    patch_name: Annotated[str, Field(min_length=1, max_length=16, pattern=r"^[ -~]+$")]
     preamp: PreampBlock
     od_ds: OdDsBlock
     comp: CompBlock
