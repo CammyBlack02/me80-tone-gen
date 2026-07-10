@@ -100,6 +100,9 @@ Real exit codes (`0` on success, `1` on generation failure, `2` on usage error) 
 ```bash
 tone-gen-serve
 # → http://127.0.0.1:8765
+
+# Override host/port with flags, or with TONE_GEN_HOST / TONE_GEN_PORT env vars
+tone-gen-serve --port 9000
 ```
 
 Single-page UI: text input, options, results panel with recipe match indicator, download `.tsl` button. The browser builds the download from the same JSON the API returns — no second round-trip.
