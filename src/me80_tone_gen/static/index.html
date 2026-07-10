@@ -222,8 +222,10 @@ function renderReadyBanner(data) {
     </div>
     <div class="banner-actions">
       <button id="ready-retry">Retry</button>
+      <button id="ready-dismiss">Dismiss</button>
     </div>`;
   $("ready-retry").addEventListener("click", checkReady);
+  $("ready-dismiss").addEventListener("click", () => { el.style.display = "none"; });
 }
 
 async function checkReady() {
@@ -375,11 +377,13 @@ $("gen-form").addEventListener("submit", async (e) => {
       const err = await r.json().catch(() => ({ detail: { message: "request failed" } }));
       const msg = (err.detail && err.detail.message) || err.detail || `HTTP ${r.status}`;
       showError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      checkReady();
       return;
     }
     renderResult(await r.json());
   } catch (e) {
     showError("Network error: " + e.message);
+    checkReady();
   } finally {
     btn.disabled = false;
     btn.textContent = "Generate";

@@ -61,10 +61,7 @@ def health() -> dict[str, str]:
 
 @app.get("/api/ready")
 def ready(model: str = DEFAULT_MODEL) -> dict[str, Any]:
-    """Preflight probe: is Ollama reachable and the target model pulled?
-
-    Always 200 — readiness is state, not an error. The UI keys off `ready`.
-    """
+    """Always 200 — readiness is state, not an error. The UI keys off `ready`."""
     return generator.probe_ready(model)
 
 
