@@ -42,7 +42,15 @@ def _parse_args(argv: list[str] | None = None) -> tuple[str, int]:
         port = args.port
     else:
         env_port = os.environ.get(ENV_PORT)
-        port = int(env_port) if env_port else DEFAULT_PORT
+        if env_port:
+            try:
+                port = int(env_port)
+            except ValueError:
+                parser.error(f"{ENV_PORT} must be an integer (got {env_port!r})")
+        else:
+            port = DEFAULT_PORT
+    if not 1 <= port <= 65535:
+        parser.error(f"port must be in 1..65535 (got {port})")
     return host, port
 
 
