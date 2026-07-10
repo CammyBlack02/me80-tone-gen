@@ -176,6 +176,74 @@ class GenerationError(Exception):
         return self.message
 
 
+ISSUE_OLLAMA_UNREACHABLE = "ollama_unreachable"
+ISSUE_MODEL_NOT_PULLED = "model_not_pulled"
+ISSUE_OLLAMA_ERROR = "ollama_error"
+
+
+def _transport_error_kind(exc: Exception) -> str | None:
+    """Classify an Ollama transport failure. Returns the issue label or None
+    for anything unrecognized so genuine bugs still surface raw.
+    """
+    import httpx
+    import ollama
+
+    if isinstance(exc, ollama.ResponseError):
+        if exc.status_code == 404 or "not found" in str(exc).lower():
+            return ISSUE_MODEL_NOT_PULLED
+        return ISSUE_OLLAMA_ERROR
+    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException, ConnectionError)):
+        return ISSUE_OLLAMA_UNREACHABLE
+    return None
+
+
+def probe_ready(
+    model: str = DEFAULT_MODEL, client: object | None = None
+) -> dict[str, str | bool]:
+    """Check Ollama reachability and whether `model` is pulled.
+
+    Never raises for the two expected failure modes (unreachable, model missing)
+    — those are the states the caller wants to render to a user, not exceptions
+    to handle.
+    """
+    import ollama
+
+    if client is None:
+        client = ollama.Client()
+
+    try:
+        response = client.list()  # type: ignore[attr-defined]
+    except Exception as exc:
+        kind = _transport_error_kind(exc)
+        if kind == ISSUE_OLLAMA_UNREACHABLE:
+            return {
+                "ready": False,
+                "issue": kind,
+                "message": "Cannot reach the Ollama server.",
+                "fix": "brew services start ollama (or: ollama serve)",
+            }
+        if kind == ISSUE_OLLAMA_ERROR:
+            return {
+                "ready": False,
+                "issue": kind,
+                "message": f"Ollama returned an error: {exc}",
+                "fix": "",
+            }
+        raise
+
+    names = {m.model for m in response.models}
+    if model not in names:
+        return {
+            "ready": False,
+            "issue": ISSUE_MODEL_NOT_PULLED,
+            "model": model,
+            "message": f"Model {model!r} is not pulled.",
+            "fix": f"ollama pull {model}",
+        }
+
+    return {"ready": True, "model": model}
+
+
 def _as_friendly_transport_error(exc: Exception, model: str) -> GenerationError | None:
     """Translate an Ollama transport failure into an actionable GenerationError.
 
@@ -183,28 +251,26 @@ def _as_friendly_transport_error(exc: Exception, model: str) -> GenerationError 
     pulled — deserve a one-line instruction, not a traceback. Returns None for
     anything unrecognized so genuine bugs still surface raw.
     """
-    import httpx
-    import ollama
-
-    if isinstance(exc, ollama.ResponseError):
-        if exc.status_code == 404 or "not found" in str(exc).lower():
-            return GenerationError(
-                message=(
-                    f"Model {model!r} is not available in Ollama. "
-                    f"Pull it first: ollama pull {model}"
-                ),
-                last_error=str(exc),
-            )
-        return GenerationError(
-            message=f"Ollama returned an error: {exc}", last_error=str(exc)
-        )
-    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException, ConnectionError)):
+    kind = _transport_error_kind(exc)
+    if kind == ISSUE_OLLAMA_UNREACHABLE:
         return GenerationError(
             message=(
                 "Cannot reach the Ollama server. Is it running? "
                 "Start it with `ollama serve` (or `brew services start ollama`)."
             ),
             last_error=str(exc),
+        )
+    if kind == ISSUE_MODEL_NOT_PULLED:
+        return GenerationError(
+            message=(
+                f"Model {model!r} is not available in Ollama. "
+                f"Pull it first: ollama pull {model}"
+            ),
+            last_error=str(exc),
+        )
+    if kind == ISSUE_OLLAMA_ERROR:
+        return GenerationError(
+            message=f"Ollama returned an error: {exc}", last_error=str(exc)
         )
     return None
 

@@ -18,6 +18,7 @@ from me80_tone_gen.generator import (
     evenly_spaced_temperatures,
     generate_patch,
     generate_variants,
+    probe_ready,
 )
 from me80_tone_gen.schema import SemanticPatch
 from tests.conftest import valid_patch_json as _valid_patch_json
@@ -313,3 +314,67 @@ def test_generate_variants_raises_on_any_failure() -> None:
     })
     with pytest.raises(GenerationError):
         generate_variants("bluesy lead", n=3, client=fake, retries=0)
+
+
+# --- probe_ready --------------------------------------------------------------
+
+
+class _FakeModel:
+    def __init__(self, name: str) -> None:
+        self.model = name
+
+
+class _FakeListResponse:
+    def __init__(self, names: list[str]) -> None:
+        self.models = [_FakeModel(n) for n in names]
+
+
+class FakeOllamaList:
+    """Fake Ollama client for probe_ready — implements only .list()."""
+
+    def __init__(
+        self,
+        names: list[str] | None = None,
+        raises: Exception | None = None,
+    ) -> None:
+        self._names = names or []
+        self._raises = raises
+
+    def list(self) -> _FakeListResponse:
+        if self._raises is not None:
+            raise self._raises
+        return _FakeListResponse(self._names)
+
+
+def test_probe_ready_success() -> None:
+    fake = FakeOllamaList(names=["qwen2.5:14b", "llama3.2:3b"])
+    result = probe_ready("qwen2.5:14b", client=fake)
+    assert result == {"ready": True, "model": "qwen2.5:14b"}
+
+
+def test_probe_ready_model_not_pulled() -> None:
+    fake = FakeOllamaList(names=["llama3.2:3b"])
+    result = probe_ready("qwen2.5:14b", client=fake)
+    assert result["ready"] is False
+    assert result["issue"] == "model_not_pulled"
+    assert result["model"] == "qwen2.5:14b"
+    assert "ollama pull qwen2.5:14b" in result["fix"]
+
+
+def test_probe_ready_ollama_unreachable() -> None:
+    import httpx
+
+    fake = FakeOllamaList(raises=httpx.ConnectError("nope"))
+    result = probe_ready("qwen2.5:14b", client=fake)
+    assert result["ready"] is False
+    assert result["issue"] == "ollama_unreachable"
+    assert "ollama" in result["fix"].lower()
+
+
+def test_probe_ready_ollama_response_error() -> None:
+    import ollama
+
+    fake = FakeOllamaList(raises=ollama.ResponseError("boom", status_code=500))
+    result = probe_ready("qwen2.5:14b", client=fake)
+    assert result["ready"] is False
+    assert result["issue"] == "ollama_error"

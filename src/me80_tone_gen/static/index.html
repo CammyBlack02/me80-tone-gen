@@ -16,6 +16,8 @@
     --accent-dim: #b8541f;
     --on: #3fb950;
     --off: #6e7681;
+    --warn: #e3b341;
+    --warn-strong: #ffd166;
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
   * { box-sizing: border-box; }
@@ -93,6 +95,20 @@
     border-radius: 6px; padding: 14px 16px; color: #ffa198; font-family: var(--mono);
     font-size: 13px; margin-bottom: 16px; }
 
+  .banner { background: rgba(210, 153, 34, 0.12); border: 1px solid rgba(210, 153, 34, 0.4);
+    border-radius: 6px; padding: 12px 16px; color: var(--warn); font-size: 13px;
+    margin-bottom: 16px; display: flex; align-items: flex-start; gap: 12px; }
+  .banner .banner-body { flex: 1; }
+  .banner .banner-title { font-weight: 600; margin-bottom: 4px; color: var(--warn-strong); }
+  .banner .banner-fix { display: block; margin-top: 6px; font-family: var(--mono);
+    font-size: 12px; color: var(--text); background: rgba(0,0,0,0.25); padding: 6px 8px;
+    border-radius: 4px; }
+  .banner .banner-actions { display: flex; gap: 6px; }
+  .banner button { background: transparent; color: var(--warn);
+    border: 1px solid rgba(210, 153, 34, 0.5);
+    border-radius: 4px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .banner button:hover { border-color: var(--warn); }
+
   .empty { color: var(--text-dim); text-align: center; padding: 40px 0; }
 
   details.recipes { font-size: 13px; color: var(--text-dim); }
@@ -111,6 +127,8 @@
     <h1>ME-80 <span class="accent">AI Tone Generator</span></h1>
     <span class="version" id="version">·</span>
   </header>
+
+  <div id="ready-banner" class="banner" style="display:none;"></div>
 
   <form id="gen-form" class="card">
     <label class="field">
@@ -182,6 +200,52 @@ async function fetchHealth() {
       $("version").textContent = "v" + data.version;
     }
   } catch (_) {}
+}
+
+function renderReadyBanner(data) {
+  const el = $("ready-banner");
+  if (data.ready) {
+    el.style.display = "none";
+    return;
+  }
+  el.style.display = "flex";
+  const titles = {
+    ollama_unreachable: "Ollama isn't running",
+    model_not_pulled: "Model isn't pulled",
+  };
+  const title = titles[data.issue] || "Ollama isn't ready";
+  const fix = data.fix
+    ? `<code class="banner-fix">${data.fix}</code>`
+    : "";
+  el.innerHTML = `
+    <div class="banner-body">
+      <div class="banner-title">${title}</div>
+      <div>${data.message || ""}</div>
+      ${fix}
+    </div>
+    <div class="banner-actions">
+      <button id="ready-retry">Retry</button>
+      <button id="ready-dismiss">Dismiss</button>
+    </div>`;
+  $("ready-retry").addEventListener("click", checkReady);
+  $("ready-dismiss").addEventListener("click", () => { el.style.display = "none"; });
+}
+
+async function checkReady() {
+  try {
+    const model = $("model").value.trim();
+    const url = "/api/ready" + (model ? `?model=${encodeURIComponent(model)}` : "");
+    const r = await fetch(url);
+    if (!r.ok) return;
+    renderReadyBanner(await r.json());
+  } catch (_) {
+    renderReadyBanner({
+      ready: false,
+      issue: "ollama_unreachable",
+      message: "Cannot reach the server.",
+      fix: "",
+    });
+  }
 }
 
 async function fetchRecipes() {
@@ -316,11 +380,13 @@ $("gen-form").addEventListener("submit", async (e) => {
       const err = await r.json().catch(() => ({ detail: { message: "request failed" } }));
       const msg = (err.detail && err.detail.message) || err.detail || `HTTP ${r.status}`;
       showError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      checkReady();
       return;
     }
     renderResult(await r.json());
   } catch (e) {
     showError("Network error: " + e.message);
+    checkReady();
   } finally {
     btn.disabled = false;
     btn.textContent = "Generate";
@@ -340,6 +406,7 @@ $("copy-json-btn").addEventListener("click", () => {
 
 fetchHealth();
 fetchRecipes();
+checkReady();
 </script>
 </body>
 </html>
