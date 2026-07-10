@@ -4,6 +4,7 @@
       "id": "master-of-puppets-rhythm",
       "aliases": ["master of puppets", "puppets rhythm", "metallica metal rhythm", "thrash metal rhythm", "scooped metal rhythm", "mesa mark high gain"],
       "tags": ["metal", "thrash-metal", "1980s", "metallica", "rhythm"],
+      "confidence": "tested",
       "description": "Scooped-mid Mesa Mark IIC+ style high-gain rhythm tone with a Tube Screamer in front to tighten the low end. The TS is set low-drive / high-tone — it acts as a clean boost, not a distortion source.",
       "patch": {
         "preamp": {"enabled": true, "type": "METAL", "gain": 70, "bass": 65, "middle": 30, "treble": 70, "level": 65},
