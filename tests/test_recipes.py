@@ -6,6 +6,8 @@ import pytest
 from pydantic import ValidationError
 
 from me80_tone_gen.recipes import Recipe, RecipeBook, load_recipes, match_recipe
+from me80_tone_gen.schema import SemanticPatch
+from me80_tone_gen.writer import build_liveset, semantic_to_params
 
 
 @pytest.fixture(scope="module")
@@ -124,6 +126,31 @@ def test_matcher_prefers_more_specific_alias_on_tie() -> None:
     r = match_recipe("classic hard rock rhythm tone", book)
     assert r is not None
     assert r.id == "specific-match"
+
+
+def test_every_recipe_round_trips_through_writer(recipes: list[Recipe]) -> None:
+    """Every recipe's patch must survive semantic_to_params + build_liveset.
+
+    Pydantic's `Literal[*enums.X_TYPES]` already blocks typo'd type names at
+    load time, so the direct gap Fable §9 called out doesn't exist in
+    practice. What this test does catch is *drift* between recipes.py's
+    schema and writer.py's enum-index lookups (e.g. renaming an enum
+    without updating the writer, or adding a block whose default template
+    isn't wired into `default_params`) — bugs that would ship silently
+    otherwise since the schema stays valid but the writer breaks.
+    """
+    for r in recipes:
+        semantic = SemanticPatch.model_validate({
+            **r.patch.model_dump(),
+            "patch_name": "TEST",
+            "rationale": "round-trip test",
+        })
+        try:
+            params = semantic_to_params(semantic)
+            build_liveset([semantic], "Round-trip check")
+        except Exception as exc:
+            raise AssertionError(f"recipe {r.id!r} failed round-trip: {exc}") from exc
+        assert len(params) == 82, f"recipe {r.id!r} produced wrong param count"
 
 
 def test_recipe_patches_use_valid_knob_range(recipes: list[Recipe]) -> None:
