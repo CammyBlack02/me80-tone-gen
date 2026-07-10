@@ -176,6 +176,58 @@ class GenerationError(Exception):
         return self.message
 
 
+def probe_ready(
+    model: str = DEFAULT_MODEL, client: object | None = None
+) -> dict[str, str | bool]:
+    """Check Ollama reachability and whether `model` is pulled.
+
+    Returns a JSON-serializable dict describing readiness. Never raises for the
+    two expected failure modes (unreachable, model missing) — those are the
+    states the caller wants to render to a user, not exceptions to handle.
+
+    - ``{"ready": True, "model": ...}`` — Ollama up and model pulled
+    - ``{"ready": False, "issue": "ollama_unreachable", ...}`` — transport failed
+    - ``{"ready": False, "issue": "model_not_pulled", ...}`` — model missing
+    - ``{"ready": False, "issue": "ollama_error", ...}`` — other Ollama-side error
+    """
+    import httpx
+    import ollama
+
+    if client is None:
+        client = ollama.Client()
+
+    try:
+        response = client.list()  # type: ignore[attr-defined]
+    except (httpx.ConnectError, httpx.TimeoutException, ConnectionError) as exc:
+        return {
+            "ready": False,
+            "issue": "ollama_unreachable",
+            "message": "Cannot reach the Ollama server.",
+            "fix": "brew services start ollama  (or: ollama serve)",
+            "detail": str(exc),
+        }
+    except ollama.ResponseError as exc:
+        return {
+            "ready": False,
+            "issue": "ollama_error",
+            "message": f"Ollama returned an error: {exc}",
+            "fix": "",
+            "detail": str(exc),
+        }
+
+    names = {getattr(m, "model", None) or getattr(m, "name", None) for m in response.models}
+    if model not in names:
+        return {
+            "ready": False,
+            "issue": "model_not_pulled",
+            "model": model,
+            "message": f"Model {model!r} is not pulled.",
+            "fix": f"ollama pull {model}",
+        }
+
+    return {"ready": True, "model": model}
+
+
 def _as_friendly_transport_error(exc: Exception, model: str) -> GenerationError | None:
     """Translate an Ollama transport failure into an actionable GenerationError.
 

@@ -59,6 +59,15 @@ def health() -> dict[str, str]:
     return {"status": "ok", "version": __version__}
 
 
+@app.get("/api/ready")
+def ready(model: str = DEFAULT_MODEL) -> dict[str, Any]:
+    """Preflight probe: is Ollama reachable and the target model pulled?
+
+    Always 200 — readiness is state, not an error. The UI keys off `ready`.
+    """
+    return generator.probe_ready(model)
+
+
 @app.get("/api/recipes")
 def list_recipes() -> dict[str, Any]:
     """Return id, aliases, and description for each loaded recipe."""
